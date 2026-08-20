@@ -1,0 +1,76 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# ── JUNBI 추가 ─────────────────────────────
+
+# 환경변수
+.env
+.env.*
+!.env.example
+
+# Supabase 로컬
+supabase/.temp/
+supabase/.branches/
+supabase/seed.local.sql
+
+# DB 덤프가 실수로 떨어지는 경우
+*.sql.gz
+data-*.sql
+dump*.sql
+out/
+
+# 인증서 · 키
+*.pem
+*.p8
+*.p12
+*.key
+vapid*.json
+google-credentials*.json
+service-account*.json
+
+# 실제 일정·애칭이 찍힌 스크린샷 원본
+/screenshots/raw/
+
+# 로컬 도구
+.vercel
+.DS_Store
+*.log
