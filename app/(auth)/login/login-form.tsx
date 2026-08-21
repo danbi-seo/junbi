@@ -63,7 +63,10 @@ export function LoginForm() {
 
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { shouldCreateUser: true },
+      // 모르는 사람이 주소만 넣어 계정을 만들 수 없게 한다.
+      // 배포 주소는 누구나 열 수 있고, 계정이 생기면 메일 할당량도 소모된다.
+      // 실제 가입은 7단계에서 초대 링크를 통해서만 → docs/08-auth-pairing.md
+      options: { shouldCreateUser: false },
     });
 
     setBusy(false);
