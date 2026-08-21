@@ -13,6 +13,10 @@ import type { EventScope, EventVisibility } from "@/lib/events";
  *   - 상대의 개인 일정을 수정하려 하면 0 rows
  *   - 구글에서 가져온 일정(read_only)은 수정 불가
  * 화면에서 한 번 더 막는 건 사용자 편의고, 실제 방어선은 DB다.
+ *
+ * ⚠ insert/update 뒤에 .select()를 붙이지 말 것.
+ *   events는 select 권한이 없어서 "만든 행을 돌려달라"는 요청이 403이 된다.
+ *   돌려받아야 하면 events_visible에서 다시 읽는다.
  */
 
 export type ActionResult = { ok: true } | { ok: false; message: string };

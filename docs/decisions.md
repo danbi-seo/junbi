@@ -139,6 +139,24 @@
 
 ---
 
+## 2026-08-21 — 1단계
+
+```
+2026-08-21  Realtime을 events가 아니라 couple_signals(신호 전용 테이블)로
+            events는 select 권한이 없어 Realtime이 아예 전달하지 못한다
+            게다가 Realtime 페이로드에는 마스킹이 적용되지 않아,
+            내용이 실려 오면 그대로 쓰고 싶은 유혹이 생긴다
+            신호에는 "바뀌었다"는 사실과 시각뿐이라 샐 것이 구조적으로 없다
+2026-08-21  events에 insert/update 후 .select()를 붙이지 않는다
+            select 권한이 없어 return=representation이 403이 된다
+            supabase-js는 기본이 return=minimal이라 그냥 두면 문제없다
+2026-08-21  삭제는 소프트 삭제만. deleted_at을 채운다
+            하드 삭제하면 max(updated_at)이 과거로 돌아가 .ics ETag가 어긋난다
+2026-08-21  종일 일정은 끝을 다음 날 00:00으로 저장
+            .ics의 DTEND 규칙과 같다. 하루 빼면 캘린더에 안 뜬다
+```
+
+---
 ## 미결 — 정해야 하는 것
 
 결정하면 위 로그로 옮긴다.

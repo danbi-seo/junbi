@@ -6,6 +6,7 @@ import { getContext } from "@/lib/session";
 import { dayRange, formatDay } from "@/lib/time";
 import type { VisibleEvent } from "@/lib/events";
 import { SeamView } from "./seam-view";
+import { Live } from "@/app/live";
 
 export const metadata: Metadata = { title: "하루 · JUNBI" };
 
@@ -45,6 +46,8 @@ export default async function DayPage(props: PageProps<"/day/[date]">) {
           <Link href={`/day/${shift(date, 1)}`}>›</Link>
         </div>
       </div>
+
+      <Live />
 
       <SeamView
         events={events ?? []}

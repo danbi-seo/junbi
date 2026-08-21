@@ -5,6 +5,7 @@ import { getUser } from "@/lib/supabase/server";
 import { dayRange, todayIn, formatDay } from "@/lib/time";
 import type { VisibleEvent } from "@/lib/events";
 import { EventRow } from "./event-row";
+import { Live } from "./live";
 import { SignOutButton } from "./sign-out";
 
 export default async function HomePage() {
@@ -47,6 +48,7 @@ export default async function HomePage() {
 
   return (
     <Shell email={ctx.email}>
+      <Live />
       <header className="mb-8">
         {ctx.partner ? (
           <p className="text-lg">
