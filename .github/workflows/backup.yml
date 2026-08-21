@@ -1,0 +1,77 @@
+# 주간 DB 백업 — docs/05-setup.md
+#
+# Supabase 무료 요금제에는 자동 백업이 없다. 용량은 150년치 여유인데
+# 몇 년 치 일정을 실수로 날리면 복구가 안 된다.
+#
+# 덤프는 별도 레포(junbi-backup)로 보낸다. 이유가 셋이다.
+#   - 코드 레포를 나중에 공개해도 백업은 남지 않는다
+#   - git log가 매주 쌓이는 덤프로 뒤덮이지 않는다
+#   - 백업 토큰이 백업 레포에만 접근하면 된다
+name: db backup
+
+on:
+  schedule:
+    - cron: "0 18 * * 0" # 매주 일요일 03:00 KST
+  workflow_dispatch: # 큰 변경 전에 수동으로 한 번 뜨고 싶을 때
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: 덤프
+        env:
+          # ⚠ 반드시 Session pooler 주소여야 한다 (port 5432).
+          # 직접 연결(db.xxx.supabase.co)은 IPv6 전용이고
+          # GitHub Actions 러너는 IPv4라 닿지 않는다.
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          # 스키마와 데이터를 나눈다. 스키마는 덮어쓰고 데이터만 날짜별로 쌓으면
+          # Git이 변경분만 저장해 레포가 부풀지 않는다.
+          supabase db dump --db-url "$DB_URL" -f out/schema.sql
+          supabase db dump --db-url "$DB_URL" --data-only -f out/data.sql
+          # SQL 덤프는 압축률이 매우 높다. Git은 지워도 히스토리에 남으므로
+          # 처음부터 작게 넣는다.
+          gzip -9 out/data.sql
+          ls -lh out/
+
+      - name: 내용 확인
+        run: |
+          set -euo pipefail
+          # 빈 덤프가 조용히 쌓이는 게 최악이다. 여기서 막는다.
+          for t in couples profiles events cycles ics_tokens; do
+            grep -q "CREATE TABLE .*\"\?$t\"\?" out/schema.sql \
+              || { echo "스키마에 $t 가 없습니다"; exit 1; }
+          done
+          test -s out/data.sql.gz || { echo "데이터 덤프가 비었습니다"; exit 1; }
+          echo "스키마 $(wc -l < out/schema.sql)줄 · 데이터 $(stat -c%s out/data.sql.gz) bytes"
+
+      - name: 백업 레포로 전송
+        env:
+          TOKEN: ${{ secrets.JUNBI_BACKUP_REPO_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          DATE=$(TZ=Asia/Seoul date +%Y-%m-%d)
+          git clone --depth 1 \
+            "https://x-access-token:$TOKEN@github.com/$OWNER/junbi-backup.git" b
+          cp out/schema.sql b/
+          cp out/data.sql.gz "b/data-$DATE.sql.gz"
+          cd b
+          # 12주 보관. 무한히 쌓으면 언젠가 커지고,
+          # 3개월이면 실수를 발견하기 충분하다.
+          ls -1 data-*.sql.gz | sort -r | tail -n +13 | xargs -r rm
+          git config user.name  "backup bot"
+          git config user.email "backup@local"
+          git add -A
+          git commit -m "backup $DATE" || { echo "변경 없음"; exit 0; }
+          git push
