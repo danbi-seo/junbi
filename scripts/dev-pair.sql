@@ -95,15 +95,18 @@ begin
 end $$;
 
 -- 결과 확인
+-- auth.users는 SQL Editor(service_role)에서만 읽을 수 있다. 앱에서는 못 읽는다.
 select
   p.member_slot                     as 슬롯,
+  u.email                           as 계정,
   p.display_name                    as 표시이름,
   p.emoji_key                       as 이모지,
   p.pet_name_for_partner            as "상대를 부르는 이름",
   c.status                          as 커플상태,
   c.started_on                      as 사귄날
 from profiles p
-join couples c on c.id = p.couple_id
+join couples c    on c.id = p.couple_id
+join auth.users u on u.id = p.id
 order by p.member_slot;
 
 select
