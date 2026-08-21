@@ -70,6 +70,11 @@ service-account*.json
 # 실제 일정·애칭이 찍힌 스크린샷 원본
 /screenshots/raw/
 
+# 설계 문서 원본 
+# decisions.md는 커밋
+/docs/[0-9][0-9]-*.md
+/docs/README.md
+
 # 로컬 도구
 .vercel
 .DS_Store
