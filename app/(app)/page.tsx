@@ -3,11 +3,11 @@ import { createClient, getUser } from "@/lib/supabase/server";
 import { getContext } from "@/lib/session";
 import { dayRange, monthGridRange, todayIn, formatDay } from "@/lib/time";
 import type { VisibleEvent } from "@/lib/events";
-import { Brand } from "./brand";
+import { Brand } from "../brand";
 import { Calendar } from "./calendar";
 import { EventRow } from "./event-row";
 import { Live } from "./live";
-import { SignOutButton } from "./sign-out";
+
 
 /**
  * 메인 화면. 구성은 셋이다 — 상대 → 달력 → 그날 일정
@@ -131,14 +131,9 @@ export default async function HomePage(props: PageProps<"/">) {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col px-6 py-10">
-      <div className="mb-10 flex items-center justify-between">
+      {/* 좌측 레일이 있는 넓은 화면에서는 로고가 중복이라 감춘다 */}
+      <div className="mb-8 md:hidden">
         <Brand />
-        <div className="flex items-center gap-3 text-sm text-ash">
-          <Link href="/settings" className="underline underline-offset-4">
-            설정
-          </Link>
-          <SignOutButton />
-        </div>
       </div>
       {children}
     </main>

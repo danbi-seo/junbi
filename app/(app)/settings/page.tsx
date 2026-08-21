@@ -32,7 +32,9 @@ export default async function SettingsPage() {
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-6 py-8">
       <div className="flex items-center justify-between">
-        <Brand />
+        <span className="md:hidden">
+          <Brand />
+        </span>
         <h1 className="font-display text-lg">설정</h1>
       </div>
 

@@ -1,8 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { installState, INSTALL_COPY, type InstallState } from "@/lib/install";
 import { markInstalled } from "@/app/actions/onboarding";
+
+/**
+ * 설치 여부는 브라우저에만 있는 정보다. 서버에서는 알 수 없다.
+ * useSyncExternalStore로 읽으면 서버 렌더와 어긋나지 않고,
+ * 설치 직후 표시 모드가 바뀌는 것도 자동으로 따라간다.
+ */
+function subscribeDisplayMode(onChange: () => void) {
+  const media = window.matchMedia("(display-mode: standalone)");
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+}
 
 /**
  * 설정 상태 카드 — docs/21-onboarding.md
@@ -17,30 +28,23 @@ type Prompt = Event & {
 };
 
 export function SetupCard({ calendarConnected }: { calendarConnected: boolean }) {
-  const [state, setState] = useState<InstallState | null>(null);
+  const state = useSyncExternalStore<InstallState | null>(
+    subscribeDisplayMode,
+    installState,
+    () => null, // 서버에서는 알 수 없다
+  );
+
   const [open, setOpen] = useState(false);
   const [deferred, setDeferred] = useState<Prompt | null>(null);
 
   useEffect(() => {
-    setState(installState());
-
     // 안드로이드는 브라우저 기본 배너를 막고 우리 타이밍에 띄운다.
     const onPrompt = (e: Event) => {
       e.preventDefault();
       setDeferred(e as Prompt);
     };
     window.addEventListener("beforeinstallprompt", onPrompt);
-
-    // 설치 직후에는 새 창이 열려 이벤트를 못 받을 수 있다.
-    // 화면에 들어올 때마다 다시 확인한다.
-    const media = window.matchMedia("(display-mode: standalone)");
-    const onChange = () => setState(installState());
-    media.addEventListener("change", onChange);
-
-    return () => {
-      window.removeEventListener("beforeinstallprompt", onPrompt);
-      media.removeEventListener("change", onChange);
-    };
+    return () => window.removeEventListener("beforeinstallprompt", onPrompt);
   }, []);
 
   // 설치된 사실을 서버에도 남긴다. "완료" 버튼 대신 코드로 확인한다.
@@ -69,7 +73,6 @@ export function SetupCard({ calendarConnected }: { calendarConnected: boolean })
                 if (deferred) {
                   await deferred.prompt();
                   setDeferred(null);
-                  setState(installState());
                   return;
                 }
                 setOpen((v) => !v);
