@@ -1,0 +1,11 @@
+# 줄바꿈을 저장소 기준으로 고정한다. Windows/macOS를 오가도 diff가 깨지지 않는다.
+* text=auto eol=lf
+
+# .ics는 CRLF가 사양이다. LF만 쓰면 일부 캘린더 앱이 파일을 거부한다.
+*.ics text eol=crlf
+
+# 바이너리
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
