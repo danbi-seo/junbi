@@ -6,6 +6,7 @@ import { getContext } from "@/lib/session";
 import { Brand } from "@/app/brand";
 import { IcsCard } from "./ics-card";
 import { ReminderCard } from "./reminder-card";
+import { SetupCard } from "./setup-card";
 
 export const metadata: Metadata = { title: "설정 · JUNBI" };
 
@@ -34,6 +35,8 @@ export default async function SettingsPage() {
         <Brand />
         <h1 className="font-display text-lg">설정</h1>
       </div>
+
+      <SetupCard calendarConnected={!!row?.last_read} />
 
       <IcsCard
         initialToken={row?.token ?? null}
