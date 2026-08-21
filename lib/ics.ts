@@ -56,10 +56,16 @@ export function buildIcs(opts: {
   const { events, viewer, partner, reminderMinutes, origin } = opts;
   const label = partner ? partnerLabel(viewer, partner) : "상대";
 
+  // 시각은 UTC(Z 접미사)로 내보낸다.
+  //
+  // calendar에 timezone을 지정하면 ical-generator가 VTIMEZONE 블록 없이
+  // 시간대 없는 '떠 있는 시각'을 쓴다. 그러면 캘린더 앱이 "보는 사람의 현지 시각"으로
+  // 해석해서, 한쪽이 해외에 나가면 약속 시간이 그 나라 시각으로 밀린다.
+  // UTC는 절대 시각이라 어디서 봐도 같은 순간을 가리킨다.
+  // 종일 일정은 ical-generator가 VALUE=DATE로 따로 처리한다.
   const cal = ical({
     name: "JUNBI",
     prodId: { company: "JUNBI", product: "JUNBI", language: "KO" },
-    timezone: viewer.timezone,
     method: ICalCalendarMethod.PUBLISH,
     // 힌트일 뿐이다. OS가 무시한다. 폴링 횟수는 제어할 수 없고
     // 폴링당 전송량만 ETag로 줄일 수 있다.

@@ -11,7 +11,8 @@
     "db:push": "supabase db push --linked",
     "verify:bundle": "node --env-file=.env.local scripts/verify-bundle.mjs",
     "verify:masking": "node --env-file=.env.local scripts/verify-masking.mjs",
-    "verify": "npm run verify:rls && npm run verify:masking"
+    "verify": "npm run verify:rls && npm run verify:masking",
+    "verify:ics": "node --env-file=.env.local scripts/verify-ics.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
