@@ -21,6 +21,8 @@ export type VisibleEvent = {
   ends_at: string;
   all_day: boolean;
   blocks_time: boolean;
+  /** 소유자에게만 값이 온다. 상대에게는 null — '안 알리기로 했다'가 드러나면 안 된다 */
+  silent: boolean | null;
   /** 마스킹된 일정에서는 null이다 */
   title: string | null;
   memo: string | null;
