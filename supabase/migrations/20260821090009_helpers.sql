@@ -25,13 +25,13 @@ $$;
 -- auth.uid()를 쓰지 않으므로 service_role로 도는 .ics 라우트에서도 동작한다.
 -- 실명(name)은 최후의 폴백이며 이 함수 밖에서 직접 읽지 않는다 → docs/11-naming.md
 create or replace function public.partner_label(p_viewer uuid, p_owner uuid)
-returns text language sql stable security definer set search_path = public as $
+returns text language sql stable security definer set search_path = public as $$
   select coalesce(
     (select v.pet_name_for_partner from profiles v where v.id = p_viewer),
     (select o.display_name         from profiles o where o.id = p_owner),
     (select o.name                 from profiles o where o.id = p_owner)
   )
-$;
+$$;
 
 -- security definer라 RLS를 우회한다. 인자를 그대로 믿으면 아무 uuid나 넣어
 -- 남의 실명을 조회할 수 있다. 클라이언트에서 직접 못 부르게 막고,
