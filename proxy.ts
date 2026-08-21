@@ -43,7 +43,12 @@ export async function proxy(request: NextRequest) {
 
   // 로그인하지 않았으면 로그인 화면으로. 로그인 화면 자신은 예외다.
   const { pathname } = request.nextUrl
-  const isPublic = pathname.startsWith('/login') || pathname.startsWith('/api/ics')
+  // /auth/callback은 세션을 '만드는' 자리라 반드시 열려 있어야 한다.
+  // 막으면 메일 링크가 로그인 화면으로 튕기고 영영 로그인할 수 없다.
+  const isPublic =
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/auth/') ||
+    pathname.startsWith('/api/ics')
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
