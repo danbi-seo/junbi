@@ -9,7 +9,9 @@
     "lint": "eslint",
     "verify:rls": "node --env-file=.env.local scripts/verify-rls.mjs",
     "db:push": "supabase db push --linked",
-    "verify:bundle": "node --env-file=.env.local scripts/verify-bundle.mjs"
+    "verify:bundle": "node --env-file=.env.local scripts/verify-bundle.mjs",
+    "verify:masking": "node --env-file=.env.local scripts/verify-masking.mjs",
+    "verify": "npm run verify:rls && npm run verify:masking"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
