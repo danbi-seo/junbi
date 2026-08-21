@@ -6,6 +6,7 @@ import { getContext } from "@/lib/session";
 import { monthGridRange, todayIn, WEEKDAY } from "@/lib/time";
 import { kindOf, titleOf, emojiOf, type VisibleEvent } from "@/lib/events";
 import { Live } from "@/app/live";
+import { Brand } from "@/app/brand";
 
 export const metadata: Metadata = { title: "월 · JUNBI" };
 
@@ -54,9 +55,7 @@ export default async function MonthPage(props: PageProps<"/month">) {
       <Live />
 
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="text-sm text-ash underline underline-offset-4">
-          ← 오늘
-        </Link>
+        <Brand />
         <h1 className="font-display text-2xl">
           {year}년 {month}월
         </h1>

@@ -3,42 +3,46 @@
 /**
  * 디자인 토큰 — docs/09-ui-spec.md
  *
+ * 로고(손그림, 짙은 갈색 선)에 맞춰 중성색을 따뜻하게 잡았다.
  * 슬롯 색(a/b)은 성별이 아니라 슬롯에 붙는다. 먼저 연결한 사람이 a다.
  * 분홍/파랑 조합을 쓰지 않는 이유는 확장 시 스키마와 UI를 둘 다 뜯어야 하기 때문.
  */
 :root {
-  --paper: #f2f1ee;
+  --paper: #fbf7f0; /* 크림 */
   --card: #ffffff;
-  --ink: #1a1823;
-  --ash: #79766f;
-  --line: #dedcd6;
+  --ink: #3b2b22; /* 로고 선 색 */
+  --ash: #8c7a6b;
+  --line: #e9dfd1;
 
-  --slot-a: #5b44d4; /* 자수정 */
-  --slot-a-bg: #eeebfb;
-  --slot-b: #c08421; /* 황동 */
-  --slot-b-bg: #faf2e2;
+  --slot-a: #6b4fbf; /* 자수정 */
+  --slot-a-bg: #efeafa;
+  --slot-b: #b5791c; /* 황동 */
+  --slot-b-bg: #f7eedc;
 
-  --shared-bg: #f6f2f5;
+  --shared-bg: #f5efe9;
 
   --danger: #b3372f;
   --ok: #2f7a55;
+
+  /* 손그림에 맞춰 모서리를 넉넉히 */
+  --radius: 0.875rem;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #14131a;
-    --card: #1e1c26;
-    --ink: #f2f1ee;
-    --ash: #9a968e;
-    --line: #2f2c39;
+    --paper: #1e1813;
+    --card: #29211b;
+    --ink: #f5efe6;
+    --ash: #a2907f;
+    --line: #3a2f26;
 
     /* 어두운 배경에서 대비를 맞추려면 명도를 올려야 한다 */
-    --slot-a: #8a78e8;
-    --slot-a-bg: #241f3d;
+    --slot-a: #a48cf0;
+    --slot-a-bg: #2e2545;
     --slot-b: #e0a54a;
-    --slot-b-bg: #332a18;
+    --slot-b-bg: #3a2c17;
 
-    --shared-bg: #221f2c;
+    --shared-bg: #2b231d;
   }
 }
 
@@ -55,6 +59,9 @@
   --color-shared-bg: var(--shared-bg);
   --color-danger: var(--danger);
   --color-ok: var(--ok);
+
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 0.25rem);
 
   --font-sans: var(--font-body);
   --font-display: var(--font-display);

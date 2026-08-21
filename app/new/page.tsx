@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { getContext } from "@/lib/session";
 import { todayIn } from "@/lib/time";
 import { EventForm } from "@/app/event/event-form";
+import { Brand } from "@/app/brand";
 
 export const metadata: Metadata = { title: "새 일정 · JUNBI" };
 
@@ -17,7 +18,8 @@ export default async function NewEventPage(props: PageProps<"/new">) {
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col px-6 py-8">
       <div className="mb-8 flex items-center justify-between">
-        <h1 className="font-display text-xl">새 일정</h1>
+        <Brand />
+        <h1 className="font-display text-lg">새 일정</h1>
         <Link href="/" className="text-sm text-ash underline underline-offset-4">
           취소
         </Link>

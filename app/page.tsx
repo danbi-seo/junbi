@@ -3,6 +3,7 @@ import { createClient, getUser } from "@/lib/supabase/server";
 import { getContext } from "@/lib/session";
 import { dayRange, monthGridRange, todayIn, formatDay } from "@/lib/time";
 import type { VisibleEvent } from "@/lib/events";
+import { Brand } from "./brand";
 import { Calendar } from "./calendar";
 import { EventRow } from "./event-row";
 import { Live } from "./live";
@@ -136,8 +137,8 @@ function Shell({
 }) {
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col px-6 py-10">
-      <div className="mb-10 flex items-baseline justify-between">
-        <h1 className="font-display text-2xl tracking-tight">JUNBI</h1>
+      <div className="mb-10 flex items-center justify-between">
+        <Brand />
         <div className="flex items-center gap-3 text-sm text-ash">
           <span className="max-w-[10rem] truncate">{email}</span>
           <SignOutButton />

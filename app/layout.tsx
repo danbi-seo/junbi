@@ -22,6 +22,14 @@ const body = Noto_Sans_KR({
 export const metadata: Metadata = {
   title: "JUNBI",
   description: "커플이 일정과 상태를 나누되, 어디까지 공개할지는 각자 정한다.",
+  // 탭 아이콘에는 글자를 뺀 캐릭터만 쓴다. 16px에서 글자는 안 읽힌다.
+  icons: {
+    icon: [
+      { url: "/icons/32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: "/icons/180.png",
+  },
   appleWebApp: {
     capable: true,
     title: "JUNBI",
@@ -30,7 +38,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#F2F1EE",
+  themeColor: "#FBF7F0",
   // 사용자가 확대할 수 있어야 한다. 접근성 문제다.
   initialScale: 1,
   width: "device-width",

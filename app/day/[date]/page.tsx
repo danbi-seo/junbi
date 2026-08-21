@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getContext } from "@/lib/session";
 import { dayRange, formatDay } from "@/lib/time";
 import type { VisibleEvent } from "@/lib/events";
+import { Brand } from "@/app/brand";
 import { SeamView } from "./seam-view";
 import { Live } from "@/app/live";
 
@@ -37,9 +38,7 @@ export default async function DayPage(props: PageProps<"/day/[date]">) {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-8 sm:px-6">
       <div className="mb-6 flex items-center justify-between">
-        <Link href="/" className="text-sm text-ash underline underline-offset-4">
-          ← 오늘
-        </Link>
+        <Brand />
         <h1 className="font-display text-lg">{formatDay(date)}</h1>
         <div className="flex gap-3 text-sm text-ash">
           <Link href={`/day/${shift(date, -1)}`}>‹</Link>
