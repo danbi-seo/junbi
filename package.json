@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "verify:rls": "node --env-file=.env.local scripts/verify-rls.mjs",
+    "db:push": "supabase db push --linked"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
