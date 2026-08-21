@@ -57,7 +57,7 @@ jobs:
 
       - name: 백업 레포로 전송
         env:
-          TOKEN: ${{ secrets.BACKUP_REPO_TOKEN }}
+          TOKEN: ${{ secrets.JUNBI_BACKUP_REPO_TOKEN }}
           OWNER: ${{ github.repository_owner }}
         run: |
           set -euo pipefail
