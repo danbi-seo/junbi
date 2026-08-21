@@ -7,6 +7,7 @@ import { Brand } from "@/app/brand";
 import { IcsCard } from "./ics-card";
 import { ReminderCard } from "./reminder-card";
 import { SetupCard } from "./setup-card";
+import { PushCard } from "./push-card";
 
 export const metadata: Metadata = { title: "설정 · JUNBI" };
 
@@ -45,6 +46,8 @@ export default async function SettingsPage() {
         lastRead={row?.last_read ?? null}
         origin={`${proto}://${host}`}
       />
+
+      <PushCard />
 
       <ReminderCard
         initial={prefs?.recv_event_upcoming === false ? 0 : (prefs?.upcoming_min ?? 60)}

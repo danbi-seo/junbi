@@ -77,4 +77,59 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
-// push / notificationclick 핸들러는 3단계에서 추가한다 → docs/13-notifications.md
+/**
+ * 푸시 수신 — docs/13-notifications.md
+ *
+ * ⚠ 모든 push 이벤트가 알림을 띄워야 한다.
+ *   안 띄우면 브라우저가 푸시 권한을 회수한다.
+ *   즉 무음 백그라운드 동기화 용도로 쓸 수 없다.
+ */
+self.addEventListener("push", (event) => {
+  let d = {};
+  try {
+    d = event.data ? event.data.json() : {};
+  } catch {
+    d = { title: "JUNBI", body: "새 소식이 있어요" };
+  }
+
+  event.waitUntil(
+    (async () => {
+      await self.registration.showNotification(d.title ?? "JUNBI", {
+        body: d.body ?? "",
+        icon: "/icons/192.png",
+        badge: "/icons/badge.png",
+        // 같은 tag는 덮어쓴다. 상태 알림이 열 개 쌓이는 걸 막는다.
+        tag: d.tag ?? undefined,
+        renotify: d.renotify ?? false,
+        // 안드로이드에서 상단바에 고정된다. 아이폰은 무시한다.
+        requireInteraction: d.pinned ?? false,
+        data: { url: d.url ?? "/" },
+      });
+
+      if (typeof d.badgeCount === "number" && self.navigator.setAppBadge) {
+        await self.navigator.setAppBadge(d.badgeCount);
+      }
+    })(),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/";
+
+  event.waitUntil(
+    (async () => {
+      const list = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      // 이미 열린 창이 있으면 거기서 이동한다. 새 창을 계속 띄우지 않는다.
+      const open = list.find((c) => c.url.startsWith(self.location.origin));
+      if (open) {
+        await open.focus();
+        return open.navigate(url);
+      }
+      return self.clients.openWindow(url);
+    })(),
+  );
+});

@@ -11,8 +11,9 @@
     "db:push": "supabase db push --linked",
     "verify:bundle": "node --env-file=.env.local scripts/verify-bundle.mjs",
     "verify:masking": "node --env-file=.env.local scripts/verify-masking.mjs",
-    "verify": "npm run verify:rls && npm run verify:masking",
-    "verify:ics": "node --env-file=.env.local scripts/verify-ics.mjs"
+    "verify": "npm run verify:rls && npm run verify:masking && npm run verify:push",
+    "verify:ics": "node --env-file=.env.local scripts/verify-ics.mjs",
+    "verify:push": "node --env-file=.env.local scripts/verify-push.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
@@ -21,13 +22,15 @@
     "ical-generator": "^11.1.0",
     "next": "16.3.1",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
     "tailwindcss": "^4",

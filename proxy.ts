@@ -45,10 +45,14 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   // /auth/callback은 세션을 '만드는' 자리라 반드시 열려 있어야 한다.
   // 막으면 메일 링크가 로그인 화면으로 튕기고 영영 로그인할 수 없다.
+  // /api/*는 각자 자기 방식으로 인증한다.
+  //   /api/ics    비밀 토큰 (캘린더 앱은 로그인을 못 한다)
+  //   /api/push   CRON_SECRET (cron이 부른다)
+  // 세션 검사로 막으면 둘 다 동작하지 않는다.
   const isPublic =
     pathname.startsWith('/login') ||
     pathname.startsWith('/auth/') ||
-    pathname.startsWith('/api/ics')
+    pathname.startsWith('/api/')
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
