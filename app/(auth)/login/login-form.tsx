@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-type Step = "email" | "code";
+type Step = "email" | "code" | "password";
 
 /**
  * 이메일로 6자리 코드를 받아 로그인한다.
@@ -20,8 +20,41 @@ export function LoginForm() {
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function done() {
+    // 서버 컴포넌트가 새 세션을 보게 하려면 refresh가 필요하다.
+    router.refresh();
+    router.push("/");
+  }
+
+  /**
+   * 비밀번호 경로 — 개발용 보조 경로.
+   *
+   * 무료 요금제의 기본 메일 발송은 시간당 2통이라 개발 중에 계속 막힌다.
+   * 계정을 대시보드에서 직접 만들고 이쪽으로 들어온다.
+   * 7단계에서 카카오 로그인이 붙으면 실사용자에게는 노출하지 않는다.
+   * → docs/decisions.md
+   */
+  async function signInWithPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    setBusy(false);
+    if (error) {
+      setError("주소나 비밀번호가 맞지 않아요.");
+      return;
+    }
+    done();
+  }
 
   async function sendCode(e: React.FormEvent) {
     e.preventDefault();
@@ -62,10 +95,7 @@ export function LoginForm() {
       setError("코드가 맞지 않아요. 메일을 다시 확인해 주세요.");
       return;
     }
-
-    // 서버 컴포넌트가 새 세션을 보게 하려면 refresh가 필요하다.
-    router.refresh();
-    router.push("/");
+    done();
   }
 
   const field =
@@ -101,6 +131,71 @@ export function LoginForm() {
         <p className="text-sm leading-6 text-ash">
           비밀번호가 없어요. 메일로 6자리 코드를 보내드립니다.
         </p>
+
+        <button
+          type="button"
+          onClick={() => {
+            setStep("password");
+            setError(null);
+          }}
+          className="text-sm text-ash underline underline-offset-4"
+        >
+          비밀번호로 로그인 (개발용)
+        </button>
+      </form>
+    );
+  }
+
+  if (step === "password") {
+    return (
+      <form onSubmit={signInWithPassword} className="flex flex-col gap-4">
+        <label className="flex flex-col gap-2">
+          <span className="text-sm text-ash">이메일</span>
+          <input
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            className={field}
+          />
+        </label>
+
+        <label className="flex flex-col gap-2">
+          <span className="text-sm text-ash">비밀번호</span>
+          <input
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={field}
+          />
+        </label>
+
+        {error && <p className="text-sm text-danger">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={busy || !email || !password}
+          className={button}
+        >
+          {busy ? "확인 중…" : "로그인"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setStep("email");
+            setPassword("");
+            setError(null);
+          }}
+          className="text-sm text-ash underline underline-offset-4"
+        >
+          코드로 로그인할게요
+        </button>
       </form>
     );
   }
