@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getContext } from "@/lib/session";
 import { Brand } from "@/app/brand";
 import { IcsCard } from "./ics-card";
+import { ReminderCard } from "./reminder-card";
 
 export const metadata: Metadata = { title: "설정 · JUNBI" };
 
@@ -15,6 +16,12 @@ export default async function SettingsPage() {
   const supabase = await createClient();
   const { data } = await supabase.rpc("my_ics_token");
   const row = Array.isArray(data) ? data[0] : null;
+
+  const { data: prefs } = await supabase
+    .from("notification_prefs")
+    .select("recv_event_upcoming,upcoming_min")
+    .eq("user_id", ctx.userId)
+    .maybeSingle<{ recv_event_upcoming: boolean; upcoming_min: number }>();
 
   // .ics 주소는 캘린더 앱에 영구 저장된다. 배포 주소를 그대로 써야 한다.
   const h = await headers();
@@ -32,6 +39,10 @@ export default async function SettingsPage() {
         initialToken={row?.token ?? null}
         lastRead={row?.last_read ?? null}
         origin={`${proto}://${host}`}
+      />
+
+      <ReminderCard
+        initial={prefs?.recv_event_upcoming === false ? 0 : (prefs?.upcoming_min ?? 60)}
       />
 
       <section className="rounded-xl border border-line bg-card p-5">
