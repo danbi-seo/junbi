@@ -95,25 +95,36 @@ begin
 end $$;
 
 -- 결과 확인
+--
+-- Supabase SQL Editor는 여러 문장을 실행해도 **마지막 결과만** 보여준다.
+-- 그래서 확인용 조회를 하나로 합쳤다.
 -- auth.users는 SQL Editor(service_role)에서만 읽을 수 있다. 앱에서는 못 읽는다.
+
 select
-  p.member_slot                     as 슬롯,
-  u.email                           as 계정,
-  p.display_name                    as 표시이름,
-  p.emoji_key                       as 이모지,
-  p.pet_name_for_partner            as "상대를 부르는 이름",
-  c.status                          as 커플상태,
-  c.started_on                      as 사귄날
+  '프로필'                              as 구분,
+  p.member_slot                         as 슬롯,
+  u.email                               as 내용,
+  p.display_name || ' ' || p.emoji_key  as 표시,
+  p.pet_name_for_partner                as 부르는이름,
+  c.status::text                        as 상태
 from profiles p
 join couples c    on c.id = p.couple_id
 join auth.users u on u.id = p.id
-order by p.member_slot;
+
+union all
 
 select
-  scope       as 성격,
-  visibility  as 공개수준,
-  title       as 제목,
-  to_char(starts_at at time zone 'Asia/Seoul', 'HH24:MI') as 시각
-from events
-where title like '[테스트]%'
-order by starts_at;
+  '일정',
+  case when e.scope = 'shared' then '함께' else '개인' end,
+  e.title,
+  to_char(e.starts_at at time zone 'Asia/Seoul', 'HH24:MI'),
+  e.visibility::text,
+  case e.visibility
+    when 'full'    then '상대에게 제목까지'
+    when 'busy'    then '상대에게 일정 있음만'
+    when 'private' then '상대에게 안 보임'
+  end
+from events e
+where e.title like '[테스트]%'
+
+order by 1 desc, 2, 4;
