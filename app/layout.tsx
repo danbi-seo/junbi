@@ -21,7 +21,7 @@ const body = Noto_Sans_KR({
 
 export const metadata: Metadata = {
   title: "JUNBI",
-  description: "커플이 일정과 상태를 나누되, 어디까지 공개할지는 각자 정한다.",
+  description: "서로의 일상을 기록하는 커플 캘린더",
   // 탭 아이콘에는 글자를 뺀 캐릭터만 쓴다. 16px에서 글자는 안 읽힌다.
   icons: {
     icon: [

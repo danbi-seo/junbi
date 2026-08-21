@@ -27,7 +27,7 @@ export default async function HomePage(props: PageProps<"/">) {
     const user = await getUser();
     if (!user) return null; // proxy.ts가 이미 로그인 화면으로 보낸다
     return (
-      <Shell email={user.email}>
+      <Shell>
         <p className="leading-7 text-ash">
           아직 프로필이 없어요.
           <br />
@@ -73,7 +73,7 @@ export default async function HomePage(props: PageProps<"/">) {
   );
 
   return (
-    <Shell email={ctx.email}>
+    <Shell>
       <Live />
 
       <header className="mb-8">
@@ -128,19 +128,15 @@ export default async function HomePage(props: PageProps<"/">) {
   );
 }
 
-function Shell({
-  email,
-  children,
-}: {
-  email?: string;
-  children: React.ReactNode;
-}) {
+function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col px-6 py-10">
       <div className="mb-10 flex items-center justify-between">
         <Brand />
         <div className="flex items-center gap-3 text-sm text-ash">
-          <span className="max-w-[10rem] truncate">{email}</span>
+          <Link href="/settings" className="underline underline-offset-4">
+            설정
+          </Link>
           <SignOutButton />
         </div>
       </div>
