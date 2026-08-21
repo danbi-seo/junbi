@@ -1,26 +1,88 @@
 @import "tailwindcss";
 
+/**
+ * 디자인 토큰 — docs/09-ui-spec.md
+ *
+ * 슬롯 색(a/b)은 성별이 아니라 슬롯에 붙는다. 먼저 연결한 사람이 a다.
+ * 분홍/파랑 조합을 쓰지 않는 이유는 확장 시 스키마와 UI를 둘 다 뜯어야 하기 때문.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  --paper: #f2f1ee;
+  --card: #ffffff;
+  --ink: #1a1823;
+  --ash: #79766f;
+  --line: #dedcd6;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --slot-a: #5b44d4; /* 자수정 */
+  --slot-a-bg: #eeebfb;
+  --slot-b: #c08421; /* 황동 */
+  --slot-b-bg: #faf2e2;
+
+  --shared-bg: #f6f2f5;
+
+  --danger: #b3372f;
+  --ok: #2f7a55;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --paper: #14131a;
+    --card: #1e1c26;
+    --ink: #f2f1ee;
+    --ash: #9a968e;
+    --line: #2f2c39;
+
+    /* 어두운 배경에서 대비를 맞추려면 명도를 올려야 한다 */
+    --slot-a: #8a78e8;
+    --slot-a-bg: #241f3d;
+    --slot-b: #e0a54a;
+    --slot-b-bg: #332a18;
+
+    --shared-bg: #221f2c;
   }
 }
 
+@theme inline {
+  --color-paper: var(--paper);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ash: var(--ash);
+  --color-line: var(--line);
+  --color-slot-a: var(--slot-a);
+  --color-slot-a-bg: var(--slot-a-bg);
+  --color-slot-b: var(--slot-b);
+  --color-slot-b-bg: var(--slot-b-bg);
+  --color-shared-bg: var(--shared-bg);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+html {
+  /* 100vh는 모바일 브라우저에서 주소창 때문에 어긋난다 → docs/10-responsive.md */
+  height: 100dvh;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  /* 설치 여부에 따라 상단 높이가 달라진다. 하드코딩하지 않는다. */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 시각·금액이 흔들리지 않게. 정산 목록에서 특히 티가 난다. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
