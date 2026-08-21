@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Gowun_Batang, Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
+import { RegisterSW } from "./register-sw";
 
 // 표제(월 이름, D-day 숫자)용. 이 앱에서 숫자가 주인공인 자리에만 쓴다.
 const display = Gowun_Batang({
@@ -50,7 +51,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="ko"
       className={`${display.variable} ${body.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        <RegisterSW />
+        {children}
+      </body>
     </html>
   );
 }

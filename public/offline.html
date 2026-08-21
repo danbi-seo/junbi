@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>연결이 끊겼어요 · JUNBI</title>
+    <style>
+      :root {
+        --paper: #fbf7f0;
+        --ink: #3b2b22;
+        --ash: #8c7a6b;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --paper: #1e1813;
+          --ink: #f5efe6;
+          --ash: #a2907f;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        background: var(--paper);
+        color: var(--ink);
+        font-family:
+          "Noto Sans KR", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+        text-align: center;
+      }
+      img {
+        width: 96px;
+        height: auto;
+        margin-bottom: 1.5rem;
+      }
+      .dark-only {
+        display: none;
+      }
+      @media (prefers-color-scheme: dark) {
+        .light-only {
+          display: none;
+        }
+        .dark-only {
+          display: inline;
+        }
+      }
+      h1 {
+        margin: 0 0 0.75rem;
+        font-size: 1.25rem;
+        font-weight: 500;
+      }
+      p {
+        margin: 0 0 1.5rem;
+        line-height: 1.7;
+        color: var(--ash);
+        font-size: 0.9rem;
+      }
+      button {
+        border: 1px solid var(--ash);
+        border-radius: 0.875rem;
+        background: transparent;
+        color: var(--ink);
+        padding: 0.7rem 1.4rem;
+        font: inherit;
+        font-size: 0.9rem;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img class="light-only" src="/mark.png" alt="" />
+      <img class="dark-only" src="/mark-dark.png" alt="" />
+
+      <h1>연결이 끊겼어요</h1>
+      <!-- 사과하지 않고 다음 행동을 가리킨다 → docs/09-ui-spec.md -->
+      <p>
+        신호가 돌아오면 다시 열려요.<br />
+        오늘 일정은 휴대폰 캘린더에서도 볼 수 있어요.
+      </p>
+
+      <button type="button" onclick="location.reload()">다시 시도</button>
+    </main>
+  </body>
+</html>
