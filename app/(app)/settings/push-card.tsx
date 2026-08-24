@@ -6,6 +6,7 @@ import {
   subscribePush,
   unsubscribePush,
   STEP_LABEL,
+  lastPushError,
   type PushState,
   type PushStep,
 } from "@/lib/push";
@@ -56,9 +57,12 @@ export function PushCard({ hasSubscription }: { hasSubscription: boolean }) {
       setNote("허용은 됐는데 저장에 실패했어요. 다시 시도해 주세요.");
     } else if (next === "no-worker") {
       setNote("알림을 받을 준비가 안 됐어요. 새로고침한 뒤 다시 시도해 주세요.");
-    } else if (next === "timeout") {
+    } else if (next === "timeout" || next === "error") {
+      // 브라우저가 준 메시지를 그대로 보여준다. 뭉개면 원인을 못 찾는다.
       setNote(
-        `'${step ? STEP_LABEL[step] : "등록"}' 단계에서 응답이 없었어요. 다시 시도해 주세요.`,
+        `'${step ? STEP_LABEL[step] : "등록"}' 단계에서 막혔어요.` +
+          (lastPushError ? `
+${lastPushError}` : ""),
       );
     }
   }
@@ -182,7 +186,11 @@ export function PushCard({ hasSubscription }: { hasSubscription: boolean }) {
         </>
       )}
 
-      {note && <p className="mt-3 text-xs leading-5 text-ok">{note}</p>}
+      {note && (
+        <p className="mt-3 whitespace-pre-line text-xs leading-5 text-ok">
+          {note}
+        </p>
+      )}
     </section>
   );
 }

@@ -16,7 +16,16 @@ export type PushState =
   | "granted" // 허용됨
   | "save-failed" // 권한은 받았는데 서버에 저장을 못 함
   | "no-worker" // 서비스 워커가 준비되지 않음
-  | "timeout"; // 어느 단계에서 응답이 없음
+  | "timeout" // 어느 단계에서 응답이 없음
+  | "error"; // 브라우저가 거절함 — 이유는 lastPushError에 담긴다
+
+/**
+ * 마지막 실패 이유.
+ *
+ * 브라우저가 던진 메시지를 그대로 보관한다. 이걸 버리면
+ * "왜 안 되는지"를 영영 알 수 없다.
+ */
+export let lastPushError: string | null = null;
 
 /** 어디까지 갔는지. 멈추면 화면에 그대로 보여준다. */
 export type PushStep = "permission" | "worker" | "subscribe" | "save" | "done";
@@ -127,23 +136,44 @@ export async function subscribePush(
   if (!reg) return "no-worker";
 
   onStep?.("subscribe");
+  lastPushError = null;
+
   const existing = await withTimeout(reg.pushManager.getSubscription(), 10000);
-  if (existing === "timeout") return "timeout";
+  if (existing === "timeout") {
+    lastPushError = "기존 구독 조회에 응답이 없었어요";
+    return "timeout";
+  }
 
   let sub = existing;
   if (!sub) {
-    const created = await withTimeout(
-      reg.pushManager.subscribe({
-        // 모든 푸시가 알림을 띄워야 한다. 안 띄우면 브라우저가 권한을 회수한다.
-        // 즉 무음 백그라운드 동기화 용도로 쓸 수 없다.
-        userVisibleOnly: true,
-        applicationServerKey: urlB64ToUint8Array(
-          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-        ),
-      }),
-      20000,
-    ).catch(() => "timeout" as const);
-    if (created === "timeout") return "timeout";
+    const key = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    if (!key) {
+      lastPushError = "VAPID 공개 키가 설정되지 않았어요";
+      return "error";
+    }
+
+    let created: PushSubscription | "timeout";
+    try {
+      created = await withTimeout(
+        reg.pushManager.subscribe({
+          // 모든 푸시가 알림을 띄워야 한다. 안 띄우면 브라우저가 권한을 회수한다.
+          // 즉 무음 백그라운드 동기화 용도로 쓸 수 없다.
+          userVisibleOnly: true,
+          applicationServerKey: urlB64ToUint8Array(key),
+        }),
+        20000,
+      );
+    } catch (e) {
+      // 브라우저가 거절한 것이다. 타임아웃으로 뭉개면 원인을 못 찾는다.
+      const err = e as { name?: string; message?: string };
+      lastPushError = `${err.name ?? "Error"}: ${err.message ?? "알 수 없음"}`;
+      return "error";
+    }
+
+    if (created === "timeout") {
+      lastPushError = "푸시 서비스가 20초 안에 답하지 않았어요";
+      return "timeout";
+    }
     sub = created;
   }
 
