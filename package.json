@@ -13,7 +13,8 @@
     "verify:masking": "node --env-file=.env.local scripts/verify-masking.mjs",
     "verify": "npm run verify:rls && npm run verify:masking && npm run verify:push",
     "verify:ics": "node --env-file=.env.local scripts/verify-ics.mjs",
-    "verify:push": "node --env-file=.env.local scripts/verify-push.mjs"
+    "verify:push": "node --env-file=.env.local scripts/verify-push.mjs",
+    "fixtures": "node --env-file=.env.local scripts/dev-fixtures.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

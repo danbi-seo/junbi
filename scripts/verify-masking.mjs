@@ -65,8 +65,13 @@ console.log(`소유자: ${owner.email}`)
 console.log(`상대  : ${partner.email}\n`)
 
 // ── 시나리오 2·3 — 일정 마스킹 ────────────────────────────────
-const mine = await q(owner, 'events_visible?select=title,emoji,visibility,is_masked&title=like.%5B테스트%5D*')
-const theirs = await q(partner, 'events_visible?select=title,emoji,visibility,is_masked&order=starts_at')
+const mine = await q(owner, `events_visible?select=title,emoji,visibility,is_masked&owner_id=eq.${owner.id}`)
+// 상대가 '소유자의' 일정을 어떻게 보는지만 확인한다.
+// 자기 비공개 일정은 당연히 자기에게 보인다 — 그걸 유출로 잡으면 안 된다.
+const theirs = await q(
+  partner,
+  `events_visible?select=title,emoji,visibility,is_masked,owner_id&owner_id=eq.${owner.id}&order=starts_at`,
+)
 
 check(
   '소유자는 자기 일정에 마스킹이 걸리지 않는다',
@@ -82,7 +87,7 @@ check(
   '상대에게 비공개 일정이 보이지 않는다 (시나리오 2)',
   '비공개는 행 자체가 나가면 안 된다',
   seen.length > 0 && !seen.some((e) => e.visibility === 'private'),
-  `${seen.length}건 중 비공개 ${seen.filter((e) => e.visibility === 'private').length}건`,
+  `소유자 일정 ${seen.length}건 중 비공개 ${seen.filter((e) => e.visibility === 'private').length}건 — ${JSON.stringify(seen.filter((e) => e.visibility === 'private'))}`,
 )
 
 const masked = seen.find((e) => e.is_masked)

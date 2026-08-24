@@ -63,9 +63,10 @@ console.log(`\n.ics 피드 검증 — ${BASE}\n`);
 const a = await login(process.env.DEV_EMAIL_A);
 const b = await login(process.env.DEV_EMAIL_B);
 
-// 테스트 일정의 주인을 찾아 소유자 / 상대를 정한다
+// '시간만' 일정의 주인을 찾아 소유자 / 상대를 정한다.
+// 시간만 일정은 소유자에게만 title이 보이므로 방향 판별에 쓸 수 있다.
 const probe = await fetch(
-  `${URL_}/rest/v1/events_visible?select=owner_id,title&title=like.%5B테스트%5D*`,
+  `${URL_}/rest/v1/events_visible?select=owner_id,title,visibility&visibility=eq.busy`,
   { headers: { apikey: KEY, Authorization: `Bearer ${a.token}` } },
 );
 const rows = await probe.json();
@@ -95,7 +96,7 @@ check(
   "상대의 '시간만' 일정 제목이 없다",
   "제목이 실리면 잠금화면에 그대로 뜬다",
   !body.includes("병원 예약"),
-  "'[테스트] 병원 예약'이 발견됨",
+  "'병원 예약'이 발견됨",
 );
 check(
   "상대의 '시간만' 일정이 '일정 있음'으로 실린다",
@@ -106,7 +107,7 @@ check(
   "상대의 비공개 일정이 아예 없다",
   "비공개는 발행하지 않는다",
   !body.includes("선물 사러"),
-  "'[테스트] 선물 사러'가 발견됨",
+  "'선물 사러'가 발견됨",
 );
 check(
   "함께 일정에 [함께] 접두어가 붙는다",
