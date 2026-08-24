@@ -42,5 +42,14 @@ select cron.unschedule('purge-routine-overrides')
 select cron.schedule('purge-routine-overrides', '0 19 * * *',
   $ select purge_routine_overrides(); $);
 
+-- 발송된 알림 정리 · 지난 데이트 준비물 보관 (매일 새벽 4시 10분)
+select cron.unschedule('daily-cleanup')
+ where exists (select 1 from cron.job where jobname = 'daily-cleanup');
+
+select cron.schedule('daily-cleanup', '10 19 * * *', $
+  select purge_notification_queue();
+  select archive_finished_checklists();
+$);
+
 -- 확인
 select jobid, jobname, schedule, active from cron.job order by jobid;

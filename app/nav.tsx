@@ -15,11 +15,21 @@ import { SignOutButton } from "./sign-out";
  * 하단 탭과 좌측 레일의 순서는 같아야 한다. 기기를 옮길 때 위치가 바뀌면 헤맨다.
  */
 
+/**
+ * 최대 5개다. 넘으면 '더보기'로 접지 말고 항목을 줄인다 → docs/10-responsive.md
+ *
+ * 여기 없는 화면은 다른 자리에서 들어간다.
+ *   월 뷰    메인 달력의 ⟨주⟩⟨월⟩ 토글
+ *   일정 추가 메인 달력 오른쪽 ＋
+ *   루틴     내 상태 편집 시트 안
+ *   이음새   날짜를 두 번 탭
+ *
+ * 4단계 뒤에 장소·지출이 들어오면 기념일·루틴을 이 자리에서 빼야 한다.
+ */
 const ITEMS = [
   { href: "/", icon: "📅", label: "달력" },
-  { href: "/month", icon: "🗓", label: "월" },
+  { href: "/lists", icon: "☑", label: "목록" },
   { href: "/dday", icon: "💜", label: "기념일" },
-  { href: "/new", icon: "＋", label: "추가" },
   { href: "/routines", icon: "🔁", label: "루틴" },
   { href: "/settings", icon: "⚙", label: "설정" },
 ];
