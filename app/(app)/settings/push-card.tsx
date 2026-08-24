@@ -43,6 +43,10 @@ export function PushCard() {
       setNote("켜졌어요. 상대가 일정을 넣으면 알려드릴게요.");
     } else if (next === "denied") {
       setNote("거절하셨어요. 아래 안내를 참고해 주세요.");
+    } else if (next === "save-failed") {
+      setNote("허용은 됐는데 저장에 실패했어요. 다시 시도해 주세요.");
+    } else if (next === "no-worker") {
+      setNote("알림을 받을 준비가 안 됐어요. 새로고침한 뒤 다시 시도해 주세요.");
     }
   }
 
@@ -91,6 +95,36 @@ export function PushCard() {
             알림을 안 켜도 <strong>일정 시간 알림은 캘린더 앱이 보내줘요.</strong>{" "}
             아래에서 캘린더를 연결해 두셨다면 약속을 놓치지 않아요.
           </p>
+        </div>
+      ) : state === "no-worker" ? (
+        <div className="mt-2 text-sm leading-6 text-ash">
+          <p>
+            알림을 받을 준비가 아직 안 됐어요. 새로고침한 뒤 다시 눌러 주세요.
+          </p>
+          <p className="mt-2 text-xs">
+            개발 중에는 <code>npm run dev</code> 대신 배포된 주소에서 눌러야
+            동작해요.
+          </p>
+          <button
+            type="button"
+            onClick={turnOn}
+            disabled={busy}
+            className="mt-3 rounded-lg border border-line px-4 py-2 text-sm"
+          >
+            다시 시도
+          </button>
+        </div>
+      ) : state === "save-failed" ? (
+        <div className="mt-2 text-sm leading-6 text-ash">
+          <p>알림 권한은 받았는데 저장에 실패했어요.</p>
+          <button
+            type="button"
+            onClick={turnOn}
+            disabled={busy}
+            className="mt-3 rounded-lg border border-line px-4 py-2 text-sm"
+          >
+            다시 시도
+          </button>
         </div>
       ) : state === "unsupported" ? (
         <p className="mt-2 text-sm leading-6 text-ash">
