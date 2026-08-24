@@ -18,7 +18,7 @@ import {
 /** 알림 권한은 브라우저에만 있는 정보다. 서버에서는 알 수 없다. */
 const noSubscribe = () => () => {};
 
-export function PushCard() {
+export function PushCard({ hasSubscription }: { hasSubscription: boolean }) {
   const detected = useSyncExternalStore<PushState | null>(
     noSubscribe,
     pushState,
@@ -32,6 +32,10 @@ export function PushCard() {
   const [note, setNote] = useState<string | null>(null);
 
   if (state === null) return null;
+
+  // 브라우저 권한은 있는데 서버에 구독이 없는 경우.
+  // 화면만 '켜짐'이고 실제로는 한 통도 안 온다. 사용자는 원인을 알 수 없다.
+  const needsResubscribe = state === "granted" && !hasSubscription;
 
   async function turnOn() {
     setBusy(true);
@@ -62,7 +66,24 @@ export function PushCard() {
     <section className="rounded-xl border border-line bg-card p-5">
       <h2 className="font-display text-lg">알림</h2>
 
-      {state === "granted" ? (
+      {needsResubscribe ? (
+        <div className="mt-2 text-sm leading-6 text-ash">
+          <p className="rounded-lg bg-slot-b-bg px-3 py-2 text-ink">
+            알림 권한은 켜져 있는데 이 기기가 등록되지 않았어요.
+          </p>
+          <p className="mt-2 text-xs">
+            기기를 바꾸거나 브라우저 데이터를 지우면 이렇게 됩니다.
+          </p>
+          <button
+            type="button"
+            onClick={turnOn}
+            disabled={busy}
+            className="mt-3 w-full rounded-lg bg-slot-a px-4 py-3 font-medium text-white disabled:opacity-40"
+          >
+            {busy ? "등록 중…" : "이 기기 등록하기"}
+          </button>
+        </div>
+      ) : state === "granted" ? (
         <>
           <p className="mt-2 text-sm leading-6 text-ash">
             켜져 있어요. 상대가 함께 일정을 추가하거나 바꾸면 바로 알려드려요.

@@ -19,6 +19,15 @@ export default async function SettingsPage() {
   const { data } = await supabase.rpc("my_ics_token");
   const row = Array.isArray(data) ? data[0] : null;
 
+  // 브라우저 권한만 보면 "켜짐"인데 서버에 구독이 없을 수 있다.
+  // 실제로 발송 가능한지는 이 행이 있는지로 판단한다.
+  const { data: sub } = await supabase
+    .from("push_subscriptions")
+    .select("endpoint")
+    .eq("user_id", ctx.userId)
+    .limit(1)
+    .maybeSingle<{ endpoint: string }>();
+
   const { data: prefs } = await supabase
     .from("notification_prefs")
     .select("recv_event_upcoming,upcoming_min")
@@ -47,7 +56,7 @@ export default async function SettingsPage() {
         origin={`${proto}://${host}`}
       />
 
-      <PushCard />
+      <PushCard hasSubscription={!!sub} />
 
       <ReminderCard
         initial={prefs?.recv_event_upcoming === false ? 0 : (prefs?.upcoming_min ?? 60)}
