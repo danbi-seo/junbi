@@ -1,5 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildIcs, type FeedEvent } from "@/lib/ics";
+import {
+  upcomingAnniversaries,
+  todayIn,
+  type AnniversaryRow,
+} from "@/lib/anniversary";
 import type { Profile } from "@/lib/naming";
 
 // service_role 키와 ical-generator가 Node를 요구한다.
@@ -94,9 +99,31 @@ export async function GET(
     .eq("user_id", viewer.id)
     .maybeSingle<{ recv_event_upcoming: boolean; upcoming_min: number }>();
 
+  // 기념일도 발행한다. .ics에 종일 일정으로 실려 캘린더 위젯에 바로 뜬다.
+  const [{ data: couple }, { data: annivRows }] = await Promise.all([
+    admin
+      .from("couples")
+      .select("started_on")
+      .eq("id", viewer.couple_id)
+      .maybeSingle<{ started_on: string | null }>(),
+    admin
+      .from("anniversaries")
+      .select("id,title,emoji,base_date,repeat,is_lunar,day_step,pinned")
+      .eq("couple_id", viewer.couple_id)
+      .returns<AnniversaryRow[]>(),
+  ]);
+
+  const anniversaries = upcomingAnniversaries({
+    startedOn: couple?.started_on ?? null,
+    rows: annivRows ?? [],
+    today: todayIn(viewer.timezone),
+    within: 183, // 일정과 같은 범위(미래 6개월)
+  }).map((o) => ({ key: o.key, title: o.title, emoji: o.emoji, date: o.date }));
+
   const origin = new URL(request.url).origin;
   const body = buildIcs({
     events: events ?? [],
+    anniversaries,
     viewer,
     partner: partner ?? null,
     reminderMinutes: prefs?.recv_event_upcoming === false ? 0 : (prefs?.upcoming_min ?? 60),

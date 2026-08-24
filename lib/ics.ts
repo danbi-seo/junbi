@@ -45,15 +45,25 @@ export function summaryOf(
   return null; // private — 발행하지 않는다
 }
 
+/** 기념일 — 종일 일정으로 발행한다 */
+export type FeedAnniversary = {
+  key: string;
+  title: string;
+  emoji: string;
+  /** YYYY-MM-DD */
+  date: string;
+};
+
 export function buildIcs(opts: {
   events: FeedEvent[];
+  anniversaries?: FeedAnniversary[];
   viewer: Profile;
   partner: Profile | null;
   /** 일정 몇 분 전에 알릴지. notification_prefs.upcoming_min */
   reminderMinutes: number;
   origin: string;
 }): string {
-  const { events, viewer, partner, reminderMinutes, origin } = opts;
+  const { events, anniversaries = [], viewer, partner, reminderMinutes, origin } = opts;
   const label = partner ? partnerLabel(viewer, partner) : "상대";
 
   // 시각은 UTC(Z 접미사)로 내보낸다.
@@ -99,6 +109,32 @@ export function buildIcs(opts: {
         type: ICalAlarmType.display,
         triggerBefore: reminderMinutes * 60,
         description: summary,
+      });
+    }
+  }
+
+  for (const a of anniversaries) {
+    const [y, m, d] = a.date.split("-").map(Number);
+    const start = new Date(Date.UTC(y, m - 1, d));
+
+    const event = cal.createEvent({
+      // 자동 생성 기념일(100일 등)에도 고정 키를 쓴다.
+      // UID가 바뀌면 캘린더 앱이 새 일정으로 보고 중복이 생긴다.
+      id: `anv-${a.key}@junbi`,
+      start,
+      // 종일 일정의 DTEND는 다음 날이다. 하루를 빼먹으면 캘린더에 안 뜬다.
+      end: new Date(start.getTime() + 86400000),
+      allDay: true,
+      summary: `${a.emoji} ${a.title}`,
+      url: `${origin}/dday`,
+    });
+
+    // 종일 일정의 '0초 전'은 자정에 울린다. 하루 전과 일주일 전만 건다.
+    for (const days of [7, 1]) {
+      event.createAlarm({
+        type: ICalAlarmType.display,
+        triggerBefore: days * 86400,
+        description: `${a.title}이 ${days === 1 ? "내일" : "일주일 남았"}어요`,
       });
     }
   }

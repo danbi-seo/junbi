@@ -4,6 +4,12 @@ import { getContext } from "@/lib/session";
 import { dayRange, monthGridRange, todayIn, formatDay } from "@/lib/time";
 import type { VisibleEvent } from "@/lib/events";
 import { Brand } from "../brand";
+import {
+  upcomingAnniversaries,
+  headline,
+  ddayLabel,
+  type AnniversaryRow,
+} from "@/lib/anniversary";
 import { Calendar } from "./calendar";
 import { EventRow } from "./event-row";
 import { Live } from "./live";
@@ -66,6 +72,28 @@ export default async function HomePage(props: PageProps<"/">) {
     .order("starts_at")
     .returns<VisibleEvent[]>();
 
+  // 기념일 — 상단에 한 줄, 하나만. 두 개 이상 띄우면 눈에 안 들어온다.
+  const [{ data: couple }, { data: annivRows }] = await Promise.all([
+    supabase
+      .from("couples")
+      .select("started_on")
+      .eq("id", ctx.me.couple_id!)
+      .maybeSingle<{ started_on: string | null }>(),
+    supabase
+      .from("anniversaries")
+      .select("id,title,emoji,base_date,repeat,is_lunar,day_step,pinned")
+      .returns<AnniversaryRow[]>(),
+  ]);
+
+  const dday = headline(
+    upcomingAnniversaries({
+      startedOn: couple?.started_on ?? null,
+      rows: annivRows ?? [],
+      today,
+      within: 400,
+    }),
+  );
+
   const all = events ?? [];
   const day = dayRange(selected, ctx.timeZone);
   const ofDay = all.filter(
@@ -95,6 +123,17 @@ export default async function HomePage(props: PageProps<"/">) {
         me={ctx.userId}
         timeZone={ctx.timeZone}
       />
+
+      {dday && (
+        <Link
+          href="/dday"
+          className="mb-5 flex items-center gap-2 rounded-xl border border-line bg-card px-4 py-3"
+        >
+          <span>{dday.emoji}</span>
+          <span className="min-w-0 flex-1 truncate text-sm">{dday.title}까지</span>
+          <span className="font-display tnum text-lg">{ddayLabel(dday.daysLeft)}</span>
+        </Link>
+      )}
 
       <div className="mb-3 flex items-baseline justify-between">
         <h3 className="text-sm text-ash">

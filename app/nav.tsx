@@ -18,6 +18,7 @@ import { SignOutButton } from "./sign-out";
 const ITEMS = [
   { href: "/", icon: "📅", label: "달력" },
   { href: "/month", icon: "🗓", label: "월" },
+  { href: "/dday", icon: "💜", label: "기념일" },
   { href: "/new", icon: "＋", label: "추가" },
   { href: "/settings", icon: "⚙", label: "설정" },
 ];
