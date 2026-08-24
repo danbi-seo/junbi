@@ -37,13 +37,42 @@ export async function POST(request: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT!,
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-    process.env.VAPID_PRIVATE_KEY!,
-  );
+  // 어떤 값이 빠졌는지 알려준다. 값 자체는 절대 응답에 넣지 않는다.
+  // 인증을 통과한 호출자에게만 보이므로 이름 정도는 알려도 안전하다.
+  const missing = (
+    ["VAPID_SUBJECT", "NEXT_PUBLIC_VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "SUPABASE_SERVICE_ROLE_KEY"] as const
+  ).filter((k) => !process.env[k]?.trim());
 
-  const admin = createAdminClient();
+  if (missing.length) {
+    return Response.json(
+      { error: "missing_env", missing },
+      { status: 500 },
+    );
+  }
+
+  try {
+    webpush.setVapidDetails(
+      // 앞뒤 공백이나 따옴표가 붙어 오는 경우가 흔하다
+      process.env.VAPID_SUBJECT!.trim().replace(/^["']|["']$/g, ""),
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!.trim(),
+      process.env.VAPID_PRIVATE_KEY!.trim(),
+    );
+  } catch (e) {
+    return Response.json(
+      { error: "bad_vapid", message: (e as Error).message },
+      { status: 500 },
+    );
+  }
+
+  let admin: ReturnType<typeof createAdminClient>;
+  try {
+    admin = createAdminClient();
+  } catch (e) {
+    return Response.json(
+      { error: "admin_client", message: (e as Error).message },
+      { status: 500 },
+    );
+  }
 
   const { data: queue } = await admin
     .from("notification_queue")
