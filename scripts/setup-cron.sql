@@ -35,5 +35,12 @@ select cron.schedule(
   $$
 );
 
+-- 지난 루틴 예외 정리 (매일 새벽 4시)
+select cron.unschedule('purge-routine-overrides')
+ where exists (select 1 from cron.job where jobname = 'purge-routine-overrides');
+
+select cron.schedule('purge-routine-overrides', '0 19 * * *',
+  $ select purge_routine_overrides(); $);
+
 -- 확인
 select jobid, jobname, schedule, active from cron.job order by jobid;

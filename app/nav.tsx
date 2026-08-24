@@ -20,6 +20,7 @@ const ITEMS = [
   { href: "/month", icon: "🗓", label: "월" },
   { href: "/dday", icon: "💜", label: "기념일" },
   { href: "/new", icon: "＋", label: "추가" },
+  { href: "/routines", icon: "🔁", label: "루틴" },
   { href: "/settings", icon: "⚙", label: "설정" },
 ];
 

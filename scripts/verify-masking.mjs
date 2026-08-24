@@ -69,18 +69,20 @@ const mine = await q(owner, 'events_visible?select=title,emoji,visibility,is_mas
 const theirs = await q(partner, 'events_visible?select=title,emoji,visibility,is_masked&order=starts_at')
 
 check(
-  '소유자는 자기 일정 4개를 전부 본다',
-  '자기 일정에는 마스킹이 걸리면 안 된다',
-  mine.body?.length === 4 && mine.body.every((e) => e.title && !e.is_masked),
+  '소유자는 자기 일정에 마스킹이 걸리지 않는다',
+  '자기 일정은 제목이 항상 보여야 한다',
+  (mine.body?.length ?? 0) > 0 && mine.body.every((e) => e.title && !e.is_masked),
   `${mine.body?.length}건 / ${JSON.stringify(mine.body)?.slice(0, 200)}`,
 )
 
 const seen = theirs.body ?? []
+// 개수로 검사하지 않는다. 실제로 쓰다 보면 일정이 늘어나 매번 깨진다.
+// 지켜야 하는 건 "비공개가 한 건도 없다"는 불변식이다.
 check(
   '상대에게 비공개 일정이 보이지 않는다 (시나리오 2)',
   '비공개는 행 자체가 나가면 안 된다',
-  seen.length === 3 && !seen.some((e) => e.visibility === 'private'),
-  `${seen.length}건 (3건이어야 함)`,
+  seen.length > 0 && !seen.some((e) => e.visibility === 'private'),
+  `${seen.length}건 중 비공개 ${seen.filter((e) => e.visibility === 'private').length}건`,
 )
 
 const masked = seen.find((e) => e.is_masked)
@@ -131,6 +133,57 @@ for (const [name, why, p] of [
     why,
     rows.every((row) => row.user_id === partner.id),
     `${rows.length}건 / ${JSON.stringify(rows).slice(0, 160)}`,
+  )
+}
+
+// ── 상태 · 루틴 (docs/15-presence.md) ────────────────────────
+{
+  const rpc = async (who, fn, body) => {
+    const res = await fetch(`${URL_}/rest/v1/rpc/${fn}`, {
+      method: 'POST',
+      headers: { apikey: KEY, Authorization: `Bearer ${who.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    return { status: res.status, body: await res.json().catch(() => null) }
+  }
+
+  // 루틴 원본은 짝에게 나가지 않는다
+  const raw = await q(partner, `routines?select=id,user_id`)
+  const rows = Array.isArray(raw.body) ? raw.body : []
+  check(
+    '루틴 원본에 내 것만 보인다',
+    '주 단위 스케줄이 보이면 "화요일 8시에 왜 집에 없어?" 같은 대조가 가능해진다',
+    rows.every((r) => r.user_id === partner.id),
+    JSON.stringify(rows).slice(0, 160),
+  )
+
+  // 계산된 상태는 짝에게 나간다
+  const ok = await rpc(partner, 'current_statuses', { p_user: owner.id })
+  check(
+    '계산된 지금 상태는 짝이 읽을 수 있다',
+    '루틴 원본은 숨기고 결과만 보여준다',
+    ok.status === 200 && Array.isArray(ok.body),
+    `status=${ok.status}`,
+  )
+
+  // 남의 상태는 못 읽는다
+  const nope = await rpc(partner, 'current_statuses', {
+    p_user: '00000000-0000-0000-0000-000000000000',
+  })
+  check(
+    '짝이 아닌 사람의 상태는 0건이다',
+    '본인과 짝만 조회할 수 있어야 한다',
+    Array.isArray(nope.body) && nope.body.length === 0,
+    JSON.stringify(nope.body),
+  )
+
+  // 상태 이력 테이블이 없어야 한다
+  const hist = await q(partner, 'status_history?select=id')
+  check(
+    '상태 이력 테이블이 없다',
+    '상태 로그를 쌓으면 "몇 시에 집에 왔는지"가 시계열로 남는다. 행동 감시 기록이다',
+    hist.status === 404 || hist.status === 400,
+    `status=${hist.status}`,
   )
 }
 

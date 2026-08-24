@@ -10,7 +10,9 @@ import {
   ddayLabel,
   type AnniversaryRow,
 } from "@/lib/anniversary";
+import type { CurrentStatus } from "@/lib/presence";
 import { Calendar } from "./calendar";
+import { MyStatus, PartnerStatus } from "./status-chips";
 import { EventRow } from "./event-row";
 import { Live } from "./live";
 
@@ -85,6 +87,15 @@ export default async function HomePage(props: PageProps<"/">) {
       .returns<AnniversaryRow[]>(),
   ]);
 
+  // 상태 — 루틴과 수동을 합쳐 계산된 '지금 상태'만 온다.
+  // 루틴 원본(요일·시간표)은 상대에게 나가지 않는다 → docs/15-presence.md
+  const [{ data: mine }, { data: theirs }] = await Promise.all([
+    supabase.rpc("current_statuses", { p_user: ctx.userId }),
+    ctx.partner
+      ? supabase.rpc("current_statuses", { p_user: ctx.partner.id })
+      : Promise.resolve({ data: [] }),
+  ]);
+
   const dday = headline(
     upcomingAnniversaries({
       startedOn: couple?.started_on ?? null,
@@ -104,12 +115,27 @@ export default async function HomePage(props: PageProps<"/">) {
     <Shell>
       <Live />
 
+      {/* 내 상태는 우상단에 작게. 내 상태는 내가 이미 알고 있다. */}
+      <div className="mb-4 flex justify-end">
+        <MyStatus
+          statuses={(mine ?? []) as CurrentStatus[]}
+          timeZone={ctx.timeZone}
+        />
+      </div>
+
+      {/* 상대가 맨 위. 앱을 여는 이유가 "지금 뭐 하고 있나"다. */}
       <header className="mb-8">
         {ctx.partner ? (
-          <p className="text-lg">
-            <span className="mr-1">{ctx.partner.emoji_key}</span>
-            {ctx.label}
-          </p>
+          <>
+            <p className="text-lg">
+              <span className="mr-1">{ctx.partner.emoji_key}</span>
+              {ctx.label}
+            </p>
+            <PartnerStatus
+              statuses={(theirs ?? []) as CurrentStatus[]}
+              timeZone={ctx.timeZone}
+            />
+          </>
         ) : (
           <p className="text-ash">아직 연결된 상대가 없어요.</p>
         )}
