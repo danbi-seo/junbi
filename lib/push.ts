@@ -15,7 +15,27 @@ export type PushState =
   | "default" // 아직 안 물어봄
   | "granted" // 허용됨
   | "save-failed" // 권한은 받았는데 서버에 저장을 못 함
-  | "no-worker"; // 서비스 워커가 준비되지 않음
+  | "no-worker" // 서비스 워커가 준비되지 않음
+  | "timeout"; // 어느 단계에서 응답이 없음
+
+/** 어디까지 갔는지. 멈추면 화면에 그대로 보여준다. */
+export type PushStep = "permission" | "worker" | "subscribe" | "save" | "done";
+
+export const STEP_LABEL: Record<PushStep, string> = {
+  permission: "권한 확인",
+  worker: "서비스 워커 준비",
+  subscribe: "푸시 서비스 등록",
+  save: "서버에 저장",
+  done: "완료",
+};
+
+/** 어떤 단계도 영원히 기다리지 않게 한다. */
+async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | "timeout"> {
+  return Promise.race([
+    p,
+    new Promise<"timeout">((r) => setTimeout(() => r("timeout"), ms)),
+  ]);
+}
 
 export function pushState(): PushState {
   if (typeof window === "undefined") return "unsupported";
@@ -91,30 +111,49 @@ async function readyServiceWorker(): Promise<ServiceWorkerRegistration | null> {
  * 구독한다. 반드시 사용자 제스처(버튼 클릭) 안에서 불러야 한다.
  * 페이지 로드 시 자동 호출하면 아이폰에서 무시되고 인상도 나쁘다.
  */
-export async function subscribePush(): Promise<PushState> {
+export async function subscribePush(
+  onStep?: (step: PushStep) => void,
+): Promise<PushState> {
   if (pushState() !== "default" && pushState() !== "granted") return pushState();
 
   // 권한을 먼저 묻는다. 사용자 제스처 안에서 호출해야 하는데,
   // 앞에서 오래 기다리면 제스처가 끊긴 것으로 보는 브라우저가 있다.
+  onStep?.("permission");
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return permission as PushState;
 
+  onStep?.("worker");
   const reg = await readyServiceWorker();
   if (!reg) return "no-worker";
 
-  const sub =
-    (await reg.pushManager.getSubscription()) ??
-    (await reg.pushManager.subscribe({
-      // 모든 푸시가 알림을 띄워야 한다. 안 띄우면 브라우저가 권한을 회수한다.
-      // 즉 무음 백그라운드 동기화 용도로 쓸 수 없다.
-      userVisibleOnly: true,
-      applicationServerKey: urlB64ToUint8Array(
-        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-      ),
-    }));
+  onStep?.("subscribe");
+  const existing = await withTimeout(reg.pushManager.getSubscription(), 10000);
+  if (existing === "timeout") return "timeout";
 
+  let sub = existing;
+  if (!sub) {
+    const created = await withTimeout(
+      reg.pushManager.subscribe({
+        // 모든 푸시가 알림을 띄워야 한다. 안 띄우면 브라우저가 권한을 회수한다.
+        // 즉 무음 백그라운드 동기화 용도로 쓸 수 없다.
+        userVisibleOnly: true,
+        applicationServerKey: urlB64ToUint8Array(
+          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+        ),
+      }),
+      20000,
+    ).catch(() => "timeout" as const);
+    if (created === "timeout") return "timeout";
+    sub = created;
+  }
+
+  onStep?.("save");
   // 저장이 실패하면 알림이 안 온다. 조용히 넘기면 원인을 아무도 모른다.
-  return (await save(sub)) ? "granted" : "save-failed";
+  const saved = await withTimeout(save(sub), 15000);
+  if (saved === "timeout") return "timeout";
+
+  onStep?.("done");
+  return saved ? "granted" : "save-failed";
 }
 
 /**

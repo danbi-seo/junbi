@@ -5,7 +5,9 @@ import {
   pushState,
   subscribePush,
   unsubscribePush,
+  STEP_LABEL,
   type PushState,
+  type PushStep,
 } from "@/lib/push";
 
 /**
@@ -29,6 +31,7 @@ export function PushCard({ hasSubscription }: { hasSubscription: boolean }) {
   const state = override ?? detected;
 
   const [busy, setBusy] = useState(false);
+  const [step, setStep] = useState<PushStep | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
   if (state === null) return null;
@@ -40,7 +43,9 @@ export function PushCard({ hasSubscription }: { hasSubscription: boolean }) {
   async function turnOn() {
     setBusy(true);
     setNote(null);
-    const next = await subscribePush();
+    setStep(null);
+    // 어디서 멈추는지 보이게 한다. '등록 중…'만 뜨면 원인을 알 수 없다.
+    const next = await subscribePush(setStep);
     setOverride(next);
     setBusy(false);
     if (next === "granted") {
@@ -51,6 +56,10 @@ export function PushCard({ hasSubscription }: { hasSubscription: boolean }) {
       setNote("허용은 됐는데 저장에 실패했어요. 다시 시도해 주세요.");
     } else if (next === "no-worker") {
       setNote("알림을 받을 준비가 안 됐어요. 새로고침한 뒤 다시 시도해 주세요.");
+    } else if (next === "timeout") {
+      setNote(
+        `'${step ? STEP_LABEL[step] : "등록"}' 단계에서 응답이 없었어요. 다시 시도해 주세요.`,
+      );
     }
   }
 
@@ -80,7 +89,7 @@ export function PushCard({ hasSubscription }: { hasSubscription: boolean }) {
             disabled={busy}
             className="mt-3 w-full rounded-lg bg-slot-a px-4 py-3 font-medium text-white disabled:opacity-40"
           >
-            {busy ? "등록 중…" : "이 기기 등록하기"}
+            {busy ? `등록 중… ${step ? STEP_LABEL[step] : ""}` : "이 기기 등록하기"}
           </button>
         </div>
       ) : state === "granted" ? (
@@ -168,7 +177,7 @@ export function PushCard({ hasSubscription }: { hasSubscription: boolean }) {
             disabled={busy}
             className="mt-4 w-full rounded-lg bg-slot-a px-4 py-3 font-medium text-white disabled:opacity-40"
           >
-            {busy ? "켜는 중…" : "알림 받기"}
+            {busy ? `켜는 중… ${step ? STEP_LABEL[step] : ""}` : "알림 받기"}
           </button>
         </>
       )}
