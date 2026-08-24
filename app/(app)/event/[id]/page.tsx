@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getContext } from "@/lib/session";
 import { instantToWall } from "@/lib/time";
 import { EventForm } from "../event-form";
+import { ProposalActions } from "./proposal-actions";
 import type { VisibleEvent } from "@/lib/events";
 
 export const metadata: Metadata = { title: "일정 · JUNBI" };
@@ -43,6 +44,9 @@ export default async function EditEventPage(props: PageProps<"/event/[id]">) {
     );
   }
 
+  // 제안 상태면 폼 대신 수락·거절을 먼저 보여준다
+  const isProposal = event.status === "proposed";
+
   const start = instantToWall(event.starts_at, ctx.timeZone);
   const end = instantToWall(event.ends_at, ctx.timeZone);
 
@@ -62,6 +66,14 @@ export default async function EditEventPage(props: PageProps<"/event/[id]">) {
           취소
         </Link>
       </div>
+
+      {isProposal && (
+        <ProposalActions
+          eventId={event.id}
+          mine={event.owner_id === ctx.userId}
+          partnerLabel={ctx.label}
+        />
+      )}
 
       <EventForm
         partnerLabel={ctx.label}

@@ -49,6 +49,7 @@ select cron.unschedule('daily-cleanup')
 select cron.schedule('daily-cleanup', '10 19 * * *', $
   select purge_notification_queue();
   select archive_finished_checklists();
+  select expire_proposals();
 $);
 
 -- 확인

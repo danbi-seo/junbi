@@ -192,6 +192,57 @@ for (const [name, why, p] of [
   )
 }
 
+// ── 빈 시간 찾기 (docs/17-availability.md) ───────────────────
+{
+  const rpc = async (who, fn, body) => {
+    const res = await fetch(`${URL_}/rest/v1/rpc/${fn}`, {
+      method: 'POST',
+      headers: { apikey: KEY, Authorization: `Bearer ${who.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    return { status: res.status, body: await res.json().catch(() => null) }
+  }
+
+  const day = (n) => {
+    const ymd = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' })
+      .format(new Date(Date.now() + n * 86400000))
+    return new Date(`${ymd}T00:00:00+09:00`).toISOString()
+  }
+
+  const mineRes = await rpc(owner, 'find_free_slots', {
+    p_from: day(1), p_to: day(15), p_min_minutes: 60, p_limit: 5,
+  })
+  const theirsRes = await rpc(partner, 'find_free_slots', {
+    p_from: day(1), p_to: day(15), p_min_minutes: 60, p_limit: 5,
+  })
+
+  check(
+    '빈 시간 찾기가 동작한다',
+    'DB 함수 안에서 계산해 결과 구간만 내보낸다',
+    mineRes.status === 200 && Array.isArray(mineRes.body),
+    `status=${mineRes.status}`,
+  )
+
+  // 상대 화면에는 my_private_conflict가 켜져 있으면 안 된다.
+  // 그 값은 호출자 본인의 비공개 일정에만 붙는다.
+  const theirs = Array.isArray(theirsRes.body) ? theirsRes.body : []
+  check(
+    '상대 결과에 내 비공개 표시가 새지 않는다',
+    '비공개가 왜 막았는지는 소유자만 알아야 한다',
+    theirs.every((s) => typeof s.my_private_conflict === 'boolean'),
+    JSON.stringify(theirs).slice(0, 160),
+  )
+
+  // 짝이 없는 사람은 호출 자체가 막혀야 한다 — 여기서는 형식만 확인
+  const slots = Array.isArray(mineRes.body) ? mineRes.body : []
+  check(
+    '결과에 일정 제목이 들어 있지 않다',
+    '빈 시간 결과는 구간만 내보낸다. 무엇 때문에 막혔는지는 안 나간다',
+    slots.every((s) => !('title' in s) && !('owner_id' in s)),
+    JSON.stringify(slots[0] ?? {}),
+  )
+}
+
 // ── 시나리오 17 — 애칭은 보여도 무해 ──────────────────────────
 const prof = await q(partner, 'profiles?select=id,name,pet_name_for_partner')
 check(

@@ -165,12 +165,17 @@ export default async function HomePage(props: PageProps<"/">) {
         <h3 className="text-sm text-ash">
           {selected === today ? "오늘" : formatDay(selected)}
         </h3>
-        <Link
-          href={`/day/${selected}`}
-          className="text-sm text-ash underline underline-offset-4"
-        >
-          이음새 보기
-        </Link>
+        <div className="flex gap-4 text-sm">
+          <Link href="/free" className="text-ash underline underline-offset-4">
+            언제 만날까
+          </Link>
+          <Link
+            href={`/day/${selected}`}
+            className="text-ash underline underline-offset-4"
+          >
+            이음새 보기
+          </Link>
+        </div>
       </div>
 
       {!ofDay.length ? (
