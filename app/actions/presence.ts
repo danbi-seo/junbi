@@ -20,7 +20,8 @@ export async function setStatus(
     p_kind: kind,
     p_emoji: emoji,
     p_text: text,
-    p_hours: Math.max(1, Math.round(hours)),
+    // 반올림하지 않는다. '30분'(0.5)이 1시간으로 저장되던 원인이었다.
+    p_hours: Math.max(0.5, hours),
   });
   if (error) return fail();
   revalidatePath("/", "layout");

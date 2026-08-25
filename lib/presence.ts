@@ -39,33 +39,29 @@ export const CHIP_STYLE = {
 export const DAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
 
 /**
- * 수동 상태 프리셋.
+ * 수동 상태 프리셋. 활동만 있다.
  *
- * '🩸 생리 중'을 넣지 않는다. 상태는 잠금화면 알림과 안드로이드 고정 알림으로도
- * 나간다. 주기 공유는 별도 스위치로 통제되는데 상태 프리셋으로 우회되면
- * 통제가 무너진다 → docs/19-health.md
+ * 컨디션은 '내 몸'으로 옮겼다. 두 군데 있으면 이름이 겹칠 뿐 아니라
+ * **상대에게 나가는 경로가 둘**이 된다. 그런데 상태 칩에는 공개 스위치가
+ * 없어서, health_sharing.share_condition을 꺼도 칩으로는 그대로 나갔다.
+ * 끄는 스위치를 우회하는 경로가 남아 있으면 스위치가 있으나 마나다.
+ *
+ * status_kind enum의 'condition'은 남겨 둔다. 지우면 기존 행이 깨지고,
+ * 만료된 채로 남아 있는 것뿐이라 해가 없다. 새로 만들 길만 없앤다.
+ *
+ * '🩸 생리 중'을 넣지 않는 것도 같은 이유였다. 상태는 잠금화면 알림과
+ * 안드로이드 고정 알림으로도 나간다 → docs/19-health.md
  */
-export const PRESETS: Record<
-  Exclude<StatusKind, "free">,
-  Array<{ emoji: string; label: string }>
-> = {
-  activity: [
-    { emoji: "💼", label: "일하는 중" },
-    { emoji: "🚇", label: "이동 중" },
-    { emoji: "🏃", label: "운동 중" },
-    { emoji: "🍽", label: "밥 먹는 중" },
-    { emoji: "🏢", label: "야근 중" },
-    { emoji: "🏠", label: "집 도착" },
-    { emoji: "☕", label: "쉬는 중" },
-    { emoji: "📚", label: "공부 중" },
-  ],
-  condition: [
-    { emoji: "🤒", label: "감기몸살" },
-    { emoji: "😣", label: "배 아픔" },
-    { emoji: "🛌", label: "쉬는 중" },
-    { emoji: "😵", label: "피곤함" },
-  ],
-};
+export const PRESETS: Array<{ emoji: string; label: string }> = [
+  { emoji: "💼", label: "일하는 중" },
+  { emoji: "🚇", label: "이동 중" },
+  { emoji: "🏃", label: "운동 중" },
+  { emoji: "🍽", label: "밥 먹는 중" },
+  { emoji: "🏢", label: "야근 중" },
+  { emoji: "🏠", label: "집 도착" },
+  { emoji: "☕", label: "쉬는 중" },
+  { emoji: "📚", label: "공부 중" },
+];
 
 /** 30분 · 2시간 · 4시간(기본) · 오늘 하루 */
 export const TTL_OPTIONS = [

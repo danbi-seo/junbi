@@ -9,7 +9,6 @@ import {
   TTL_OPTIONS,
   untilLabel,
   type CurrentStatus,
-  type StatusKind,
 } from "@/lib/presence";
 
 /**
@@ -51,13 +50,17 @@ export function PartnerStatus({
   statuses: CurrentStatus[];
   timeZone: string;
 }) {
+  // 컨디션은 여기로 나오지 않는다. '내 몸'의 share_condition이 유일한 통로다.
+  // set_status가 이미 거부하지만, 옛 데이터가 남아 있어도 새지 않게 한 번 더 거른다.
+  const shown = statuses.filter((s) => s.kind !== "condition");
+
   // 비어 있으면 아무 문구도 쓰지 않는다.
   // '상태 없음'이나 '오프라인'을 쓰면 접속 여부를 노출하는 감각이 생긴다.
-  if (!statuses.length) return null;
+  if (!shown.length) return null;
 
   return (
     <div className="mt-2 flex flex-wrap gap-1.5">
-      {statuses.map((s) => (
+      {shown.map((s) => (
         <Chip key={s.kind} s={s} timeZone={timeZone} />
       ))}
     </div>
@@ -75,7 +78,6 @@ export function MyStatus({
   const router = useRouter();
   const [pending, start] = useTransition();
   const [open, setOpen] = useState(false);
-  const [kind, setKind] = useState<Exclude<StatusKind, "free">>("activity");
   const [hours, setHours] = useState(4);
 
   // Esc로 닫힌다. 열어 놓고 나갈 길이 하나뿐이면 갇힌 느낌이 든다.
@@ -90,7 +92,7 @@ export function MyStatus({
 
   function apply(emoji: string, label: string) {
     start(async () => {
-      await setStatus(kind, emoji, label, hours);
+      await setStatus("activity", emoji, label, hours);
       setOpen(false);
       router.refresh();
     });
@@ -131,23 +133,8 @@ export function MyStatus({
         // 흐름에서 띄운다. 안에 두면 열 때마다 아래 내용이 통째로 밀려 내려간다.
         // 오른쪽 정렬 기준이라 right-0, 좁은 화면에서는 여백만큼 줄인다.
         <div className="absolute top-full right-0 z-30 mt-2 w-[min(22rem,calc(100vw-3rem))] rounded-xl border border-line bg-card p-4 shadow-lg">
-          <div className="flex gap-2 text-sm">
-            {(["activity", "condition"] as const).map((k) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => setKind(k)}
-                className={`rounded-lg border px-3 py-1.5 ${
-                  kind === k ? "border-slot-a bg-slot-a-bg" : "border-line text-ash"
-                }`}
-              >
-                {k === "activity" ? "활동" : "컨디션"}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            {PRESETS[kind].map((p) => (
+          <div className="flex flex-wrap gap-2">
+            {PRESETS.map((p) => (
               <button
                 key={p.label}
                 type="button"
@@ -202,6 +189,13 @@ export function MyStatus({
           )}
 
           <p className="mt-3 text-xs leading-5 text-ash">
+            컨디션은{" "}
+            <Link href="/health" className="underline underline-offset-4">
+              내 몸
+            </Link>
+            에서 기록해요. 상대에게 보여줄지는 거기서 따로 정할 수 있어요.
+          </p>
+          <p className="mt-2 text-xs leading-5 text-ash">
             점선은 루틴에서 추정한 상태예요.{" "}
             <Link href="/routines" className="underline underline-offset-4">
               루틴 설정

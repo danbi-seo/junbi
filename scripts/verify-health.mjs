@@ -333,6 +333,41 @@ try {
     JSON.stringify(x.body?.condition),
   );
 
+  // ── 4-2. 컨디션이 나가는 경로는 하나뿐 ────────────────────────
+  //
+  // 상태 칩에는 공개 스위치가 없다. 그쪽으로 컨디션을 만들 수 있으면
+  // share_condition을 꺼도 칩으로 그대로 나간다.
+  x = await rpc(a, "set_status", {
+    p_kind: "condition", p_emoji: "😣", p_text: "배 아픔", p_hours: 4,
+  });
+  check(
+    "상태로는 컨디션을 만들 수 없다",
+    "상태 칩에는 공개 스위치가 없다. 그쪽 경로가 열려 있으면 끄는 스위치가 우회된다",
+    x.status >= 400,
+    `status ${x.status} ${JSON.stringify(x.body).slice(0, 150)}`,
+  );
+
+  r = await (await admin(`statuses?select=kind&user_id=eq.${a.id}&kind=eq.condition`)).json();
+  check(
+    "컨디션 상태 행이 남지 않는다",
+    "거부해 놓고 행이 생기면 막은 게 아니다",
+    Array.isArray(r) && r.length === 0,
+    JSON.stringify(r),
+  );
+
+  // 30분이 1시간으로 저장되던 문제
+  await rpc(a, "set_status", {
+    p_kind: "activity", p_emoji: "🏃", p_text: "검증", p_hours: 0.5,
+  });
+  r = await (await admin(`statuses?select=until&user_id=eq.${a.id}&kind=eq.activity`)).json();
+  check(
+    "'30분'이 30분으로 저장된다",
+    "p_hours가 int라 0.5가 1로 반올림됐다. 30분 옵션이 있으나 마나였다",
+    r.length === 1 && (new Date(r[0].until) - Date.now()) / 60000 < 45,
+    r.length ? `${Math.round((new Date(r[0].until) - Date.now()) / 60000)}분 뒤 만료` : "행 없음",
+  );
+  await admin(`statuses?user_id=eq.${a.id}`, { method: "DELETE" });
+
   // ── 5. 알림 ──────────────────────────────────────────────────
   await admin("notification_queue?id=not.is.null", { method: "DELETE" });
 
