@@ -150,16 +150,26 @@ export default async function HomePage(props: PageProps<"/">) {
         timeZone={ctx.timeZone}
       />
 
-      {dday && (
-        <Link
-          href="/dday"
-          className="mb-5 flex items-center gap-2 rounded-xl border border-line bg-card px-4 py-3"
-        >
-          <span>{dday.emoji}</span>
-          <span className="min-w-0 flex-1 truncate text-sm">{dday.title}까지</span>
-          <span className="font-display tnum text-lg">{ddayLabel(dday.daysLeft)}</span>
-        </Link>
-      )}
+      {/* D-day는 탭에서 뺐다. 이 띠가 유일한 입구라 기념일이 없어도 띄워 둔다. */}
+      <Link
+        href="/dday"
+        className="mb-5 flex items-center gap-2 rounded-xl border border-line bg-card px-4 py-3"
+      >
+        {dday ? (
+          <>
+            <span>{dday.emoji}</span>
+            <span className="min-w-0 flex-1 truncate text-sm">{dday.title}까지</span>
+            <span className="font-display tnum text-lg">{ddayLabel(dday.daysLeft)}</span>
+          </>
+        ) : (
+          <>
+            <span>💜</span>
+            <span className="min-w-0 flex-1 truncate text-sm text-ash">
+              D-day를 만들어 보세요
+            </span>
+          </>
+        )}
+      </Link>
 
       <div className="mb-3 flex items-baseline justify-between">
         <h3 className="text-sm text-ash">

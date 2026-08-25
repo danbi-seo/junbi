@@ -23,14 +23,16 @@ import { SignOutButton } from "./sign-out";
  *   일정 추가 메인 달력 오른쪽 ＋
  *   루틴     내 상태 편집 시트 안
  *   이음새   날짜를 두 번 탭
+ *   D-day    메인 달력 아래 D-day 띠
  *
- * 4단계 뒤에 장소·지출이 들어오면 기념일·루틴을 이 자리에서 빼야 한다.
+ * 6단계에서 지출이 들어오면서 D-day를 이 자리에서 뺐다.
+ * D-day는 메인에 항상 띠로 떠 있어 한 번에 닿는다. 지출은 그런 자리가 없다.
  */
 const ITEMS = [
   { href: "/", icon: "📅", label: "Calendar" },
   { href: "/places", icon: "📍", label: "Places" },
   { href: "/lists", icon: "☑", label: "List" },
-  { href: "/dday", icon: "💜", label: "D-day" },
+  { href: "/expenses", icon: "💸", label: "쓴 돈" },
   { href: "/settings", icon: "⚙", label: "설정" },
 ];
 
