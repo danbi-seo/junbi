@@ -357,9 +357,10 @@ function CycleCard({
   const [showBasis, setShowBasis] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
 
+  const dur = health.periodDuration ?? 5;
   const marks = useMemo(
-    () => buildMarks(health.periods, health.prediction),
-    [health.periods, health.prediction],
+    () => buildMarks(health.periods, health.prediction, dur),
+    [health.periods, health.prediction, dur],
   );
 
   const base = new Date();
@@ -382,7 +383,7 @@ function CycleCard({
 
   /** 그 날짜를 품고 있는 기록. 종료를 안 눌렀으면 평균 5일로 본다. */
   const owningPeriod = (iso: string) =>
-    (health.periods ?? []).find((p) => expand(p.from, p.to).includes(iso)) ?? null;
+    (health.periods ?? []).find((p) => expand(p.from, p.to, dur).includes(iso)) ?? null;
 
   return (
     <section className="rounded-xl border border-line bg-card p-5">

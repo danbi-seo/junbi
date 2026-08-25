@@ -38,6 +38,8 @@ export type PeriodRow = {
 
 export type MyHealth = {
   cycleModuleOn?: boolean;
+  /** 끝을 안 누른 기록을 며칠로 볼지. 본인 기록의 중앙값, 없으면 5. */
+  periodDuration?: number;
   shareCycle?: boolean;
   shareCondition?: boolean;
   avoidInFreeSlots?: boolean;
@@ -145,7 +147,13 @@ const DAY = 86400000;
 const toDate = (s: string) => new Date(s + "T00:00:00Z");
 export const isoDay = (d: Date) => d.toISOString().slice(0, 10);
 
-/** from~to를 하루 단위 문자열 집합으로. 달력 칠하기에 쓴다. */
+/**
+ * from~to를 하루 단위 문자열 집합으로. 달력 칠하기에 쓴다.
+ *
+ * to가 비어 있으면(끝을 안 눌렀으면) fallbackDays로 본다.
+ * 호출하는 쪽이 my_health().periodDuration을 넘겨야 한다 —
+ * 5일로 두면 6~7일인 사람의 기록 구간이 짧게 칠해진다.
+ */
 export function expand(from: string, to: string | null, fallbackDays = 5): string[] {
   const s = toDate(from);
   const e = to ? toDate(to) : new Date(s.getTime() + (fallbackDays - 1) * DAY);
@@ -167,6 +175,7 @@ export type DayMark = "recorded" | "predicted" | "fertile" | null;
 export function buildMarks(
   periods: { from: string; to: string | null }[] | undefined,
   prediction: Prediction | undefined,
+  duration = 5,
 ): Map<string, DayMark> {
   const marks = new Map<string, DayMark>();
 
@@ -185,7 +194,7 @@ export function buildMarks(
   }
 
   for (const p of periods ?? []) {
-    for (const d of expand(p.from, p.to)) marks.set(d, "recorded");
+    for (const d of expand(p.from, p.to, duration)) marks.set(d, "recorded");
   }
 
   return marks;
