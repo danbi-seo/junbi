@@ -591,10 +591,15 @@ function CycleCard({
 
 // 색으로만 구분하지 않는다. 기호를 함께 쓴다 → 설계 원칙 4
 const MARK_STYLE: Record<Exclude<DayMark, null>, string> = {
+  // 꽉 찬 색은 '기록'만 쓴다. 실제로 있었던 일이라 확정적으로 읽혀도 된다.
   recorded: "bg-slot-a text-white",
   predicted: "bg-slot-a/35",
-  // 임신 가능성 구간에 무채색을 쓴다. 색이 강할수록 확정적으로 읽힌다.
-  fertile: "bg-ash/20",
+  // 임신 가능성 구간은 분홍. 무채색은 눈에 안 들어와 표시한 의미가 없었다.
+  //
+  // 다만 채우기는 옅게 두고 글자·테두리로 존재감을 낸다.
+  // 기록과 같은 무게로 칠하면 추정치가 확정처럼 읽힌다.
+  // 빨강(--danger)을 안 쓰는 이유는 삭제·오류와 같은 색이 되기 때문이다.
+  fertile: "bg-fertile-bg text-fertile ring-1 ring-inset ring-fertile/40",
 };
 const MARK_GLYPH: Record<Exclude<DayMark, null>, string> = {
   recorded: "●",
@@ -622,9 +627,17 @@ function Cell({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`flex aspect-square flex-col items-center justify-center rounded-lg text-sm disabled:opacity-30 ${
+      // 선택·오늘 표시는 outline으로 낸다.
+      // ring을 쓰면 임신 가능성 칸의 ring과 같은 속성을 다투게 된다.
+      className={`flex aspect-square flex-col items-center justify-center rounded-lg text-sm outline-offset-1 disabled:opacity-30 ${
         mark ? MARK_STYLE[mark] : ""
-      } ${selected ? "ring-2 ring-slot-a" : isToday ? "ring-1 ring-ink" : ""}`}
+      } ${
+        selected
+          ? "outline-2 outline-slot-a"
+          : isToday
+            ? "outline-1 outline-ink"
+            : ""
+      }`}
     >
       <span>{day}</span>
       <span className="text-[9px] leading-none">{mark ? MARK_GLYPH[mark] : " "}</span>

@@ -24,6 +24,21 @@
   --danger: #b3372f;
   --ok: #2f7a55;
 
+  /*
+   * 임신 가능성 높은 구간.
+   *
+   * 빨강을 쓰지 않는다. --danger가 이미 빨강이라 삭제·오류와 같은 색이 되고,
+   * 임신 가능성은 경고가 아니다.
+   *
+   * 슬롯 색(a/b)도 쓰지 않는다. 슬롯은 사람을 가리키는 색이라
+   * 몸 상태에 붙이면 의미가 섞인다.
+   *
+   * 채우기는 옅게, 글자와 기호는 진하게 간다.
+   * 꽉 찬 색은 '기록'만 쓴다 — 추정치가 확정된 기록과 같은 무게로 보이면 안 된다.
+   */
+  --fertile: #cf4d84;
+  --fertile-bg: #fbe1ec;
+
   /* 손그림에 맞춰 모서리를 넉넉히 */
   --radius: 0.875rem;
 }
@@ -43,6 +58,10 @@
     --slot-b-bg: #3a2c17;
 
     --shared-bg: #2b231d;
+
+    /* 어두운 배경에서는 명도를 올리고 채우기를 더 낮춘다 */
+    --fertile: #f292b8;
+    --fertile-bg: #45222f;
   }
 }
 
@@ -59,6 +78,8 @@
   --color-shared-bg: var(--shared-bg);
   --color-danger: var(--danger);
   --color-ok: var(--ok);
+  --color-fertile: var(--fertile);
+  --color-fertile-bg: var(--fertile-bg);
 
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 0.25rem);
