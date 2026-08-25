@@ -363,6 +363,30 @@ function CycleCard({
     [health.periods, health.prediction, dur],
   );
 
+  /**
+   * 시작·끝을 달력에서 바로 읽히게 한다.
+   *
+   * 구간을 한 가지 색으로만 칠하면 어디서 시작해 어디서 끝났는지 안 보인다.
+   * 날짜를 잘못 눌렀을 때 그걸 알아채는 게 이 화면의 핵심이다.
+   *
+   * 끝을 안 눌렀으면 마지막 날은 추정이라 '끝'으로 표시하지 않는다.
+   * 추정을 확정처럼 적으면 고칠 이유를 못 느낀다.
+   */
+  const edges = useMemo(() => {
+    const m = new Map<string, CellEdge>();
+    for (const p of health.periods ?? []) {
+      const span = expand(p.from, p.to, dur);
+      const last = span[span.length - 1];
+      if (p.to && p.from === last) {
+        m.set(p.from, "only");
+      } else {
+        m.set(p.from, "start");
+        if (p.to) m.set(last, "end");
+      }
+    }
+    return m;
+  }, [health.periods, dur]);
+
   const base = new Date();
   const month = new Date(
     Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + offset, 1),
@@ -460,6 +484,7 @@ function CycleCard({
               key={iso}
               day={i + 1}
               mark={marks.get(iso) ?? null}
+              edge={edges.get(iso) ?? null}
               isToday={iso === today}
               // 앞으로의 날짜는 기록할 수 없다. 서버도 막지만 눌리지 않게 한다.
               disabled={iso > today}
@@ -474,6 +499,7 @@ function CycleCard({
           잘못된 기록 하나가 평균을 통째로 망가뜨린다 → docs/19-health.md D */}
       {picked && (
         <DaySheet
+          iso={picked}
           label={fmt(picked)}
           owning={owningPeriod(picked)}
           hasOpen={Boolean(health.openPeriodStart)}
@@ -510,17 +536,26 @@ function CycleCard({
       </div>
       <p className="mt-2 text-xs leading-5 text-ash">{CYCLE_COPY.disclaimer}</p>
 
+      {/*
+       * 이미 오늘로 기록된 것을 또 누르면 안 된다.
+       * 시작을 다시 누르면 3일 규칙에 걸려 시작일이 조용히 옮겨지고,
+       * 끝을 다시 누르면 같은 날로 덮어써진다. 둘 다 눌린 티가 안 난다.
+       */}
       <button
         type="button"
-        disabled={pending}
+        disabled={pending || edges.get(today) != null}
         onClick={() => (health.openPeriodStart ? onEnd() : onStart())}
         className="mt-4 w-full rounded-lg bg-slot-a px-4 py-3 font-medium text-white disabled:opacity-40"
       >
         {pending
           ? "저장 중…"
-          : health.openPeriodStart
-            ? "오늘 끝났어요"
-            : "오늘 시작했어요"}
+          : edges.get(today) === "end" || edges.get(today) === "only"
+            ? "오늘 끝으로 기록됨"
+            : edges.get(today) === "start"
+              ? "오늘 시작으로 기록됨"
+              : health.openPeriodStart
+                ? "오늘 끝났어요"
+                : "오늘 시작했어요"}
       </button>
 
       {/* 왜 이 날짜가 나왔는지 궁금해한다.
@@ -602,6 +637,15 @@ const MARK_STYLE: Record<Exclude<DayMark, null>, string> = {
   // 빨강(--danger)을 안 쓰는 이유는 삭제·오류와 같은 색이 되기 때문이다.
   fertile: "bg-fertile-bg text-fertile ring-1 ring-inset ring-fertile/40",
 };
+/** 기록 구간의 양 끝. only는 하루짜리 기록. */
+type CellEdge = "start" | "end" | "only";
+
+const EDGE_LABEL: Record<CellEdge, string> = {
+  start: "시작",
+  end: "끝",
+  only: "하루",
+};
+
 const MARK_GLYPH: Record<Exclude<DayMark, null>, string> = {
   recorded: "●",
   predicted: "░",
@@ -611,6 +655,7 @@ const MARK_GLYPH: Record<Exclude<DayMark, null>, string> = {
 function Cell({
   day,
   mark,
+  edge,
   isToday,
   disabled,
   selected,
@@ -618,6 +663,7 @@ function Cell({
 }: {
   day: number;
   mark: DayMark;
+  edge: CellEdge | null;
   isToday: boolean;
   disabled: boolean;
   selected: boolean;
@@ -641,7 +687,10 @@ function Cell({
       }`}
     >
       <span>{day}</span>
-      <span className="text-[9px] leading-none">{mark ? MARK_GLYPH[mark] : " "}</span>
+      {/* 색으로만 구분하지 않는다. 양 끝은 글자로 적는다 → 설계 원칙 4 */}
+      <span className={`text-[9px] leading-none ${edge ? "font-medium" : ""}`}>
+        {edge ? EDGE_LABEL[edge] : mark ? MARK_GLYPH[mark] : " "}
+      </span>
     </button>
   );
 }
@@ -653,6 +702,7 @@ function Cell({
  * 고치기 어려우면 그냥 앱을 안 쓴다 → docs/19-health.md D
  */
 function DaySheet({
+  iso,
   label,
   owning,
   hasOpen,
@@ -662,6 +712,7 @@ function DaySheet({
   onDelete,
   onClose,
 }: {
+  iso: string;
   label: string;
   owning: { id: string; from: string; to: string | null } | null;
   hasOpen: boolean;
@@ -671,16 +722,28 @@ function DaySheet({
   onDelete: (id: string) => void;
   onClose: () => void;
 }) {
+  // 이미 그날로 기록된 것은 다시 누를 수 없다.
+  //
+  // 시작을 다시 누르면 3일 규칙에 걸려 시작일이 조용히 옮겨지고,
+  // 끝을 다시 누르면 같은 날로 덮어써진다. 둘 다 아무 일도 안 일어난 것처럼
+  // 보이는데 실제로는 기록이 바뀐다. 그게 제일 나쁘다.
+  const isStart = owning?.from === iso;
+  const isEnd = owning?.to === iso;
+
   return (
     <div className="mt-4 rounded-lg border border-line bg-paper p-4">
       <div className="flex items-center justify-between">
-        <p className="font-medium">{label}</p>
+        <p className="font-medium">
+          {label}
+          {isStart && <span className="ml-2 text-sm text-slot-a">시작</span>}
+          {isEnd && <span className="ml-2 text-sm text-slot-a">끝</span>}
+        </p>
         <button type="button" onClick={onClose} aria-label="닫기" className="px-2 text-ash">
           ✕
         </button>
       </div>
 
-      {owning && (
+      {owning && !isStart && !isEnd && (
         <p className="mt-1 text-xs text-ash">
           {owning.to ? "기록된 기간 안이에요" : "진행 중인 기록이에요"}
         </p>
@@ -689,22 +752,22 @@ function DaySheet({
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
-          disabled={pending}
+          disabled={pending || isStart}
           onClick={onStart}
           className="rounded-lg border border-line bg-card px-3 py-2 text-sm disabled:opacity-40"
         >
-          이날 시작했어요
+          {isStart ? "시작으로 기록됨" : "이날 시작했어요"}
         </button>
 
         {/* 끝난 날은 시작한 기록이 있어야 의미가 있다 */}
         {(hasOpen || owning) && (
           <button
             type="button"
-            disabled={pending}
+            disabled={pending || isEnd}
             onClick={onEnd}
             className="rounded-lg border border-line bg-card px-3 py-2 text-sm disabled:opacity-40"
           >
-            이날 끝났어요
+            {isEnd ? "끝으로 기록됨" : "이날 끝났어요"}
           </button>
         )}
 

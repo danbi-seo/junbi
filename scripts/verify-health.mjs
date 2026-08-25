@@ -11,8 +11,9 @@
  *   끄면 흔적 없이 사라진다
  *   주기 관련 푸시가 없다
  *
- * 기록이 이미 있으면 아무것도 하지 않고 멈춘다.
- * 실제 건강 기록을 검증 스크립트가 건드리면 안 된다.
+ * 쓰기는 전부 A 계정(DEV_EMAIL_A)에만 한다.
+ * B는 실사용 계정이라 기록을 읽지도 지우지도 않는다.
+ * 오늘 컨디션만 양쪽 다 건드리므로 스냅샷을 떠 두고 끝나면 되돌린다.
  */
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -87,12 +88,23 @@ console.log("\n컨디션 · 주기 검증\n");
 const a = await login(process.env.DEV_EMAIL_A);
 const b = await login(process.env.DEV_EMAIL_B);
 
-// 실제 기록이 있으면 손대지 않는다
-const existing = await (await admin("cycles?select=id&limit=1")).json();
+// 검증은 A 계정에만 쓴다. B(실사용 계정)의 기록은 읽지도 지우지도 않는다.
+// A에 기록이 남아 있으면 이전 실행이 비정상 종료된 것이므로 멈춘다.
+const existing = await (
+  await admin(`cycles?select=id&user_id=eq.${a.id}&limit=1`)
+).json();
 if (Array.isArray(existing) && existing.length > 0) {
-  console.log("  이미 주기 기록이 있습니다. 실제 데이터를 건드리지 않으려고 멈춥니다.\n");
+  console.log("  A 계정에 주기 기록이 남아 있습니다. 확인 후 지우고 다시 실행하세요.\n");
   process.exit(0);
 }
+
+// 오늘 컨디션은 실제로 쓰고 있을 수 있다. 스냅샷을 떠 두고 끝나면 되돌린다.
+const TODAY = new Date().toISOString().slice(0, 10);
+const beforeConditions = await (
+  await admin(
+    `conditions?select=user_id,on_date,energy,pain_areas,memo&on_date=eq.${TODAY}`,
+  )
+).json();
 
 // 시작 상태 저장 — 끝나고 되돌린다
 const beforeSharing = await (
@@ -122,9 +134,12 @@ async function seedCycles(userId, gaps) {
   return rows;
 }
 
+/** A의 주기 기록과, 스크립트가 만든 오늘 컨디션만 지운다. */
 const wipe = async () => {
-  await admin("cycles?id=not.is.null", { method: "DELETE" });
-  await admin("conditions?id=not.is.null", { method: "DELETE" });
+  await admin(`cycles?user_id=eq.${a.id}`, { method: "DELETE" });
+  for (const u of [a.id, b.id]) {
+    await admin(`conditions?user_id=eq.${u}&on_date=eq.${TODAY}`, { method: "DELETE" });
+  }
 };
 
 await wipe();
@@ -138,7 +153,9 @@ try {
   // ── 1. 원본은 어떤 경우에도 안 나간다 ────────────────────────
   await seedCycles(a.id, [28, 29, 28]);
 
-  let r = await (await as(b, "cycles?select=id,period_start,flow,memo")).json();
+  let r = await (
+    await as(b, `cycles?select=id,period_start,flow,memo&user_id=eq.${a.id}`)
+  ).json();
   check(
     "짝은 cycles를 한 건도 못 읽는다",
     "원본 기록(증상·통증·메모·정확한 날짜)은 어떤 경우에도 상대에게 넘어가면 안 된다",
@@ -147,7 +164,7 @@ try {
   );
 
   await setSharing(a.id, { share_cycle: true });
-  r = await (await as(b, "cycles?select=id")).json();
+  r = await (await as(b, `cycles?select=id&user_id=eq.${a.id}`)).json();
   check(
     "공유를 켜도 cycles 원본은 못 읽는다",
     "공유는 파생값만 내보내는 것이지 원본 접근 권한을 주는 게 아니다",
@@ -217,7 +234,7 @@ try {
   }
 
   // 3회 미만
-  await admin("cycles?id=not.is.null", { method: "DELETE" });
+  await admin(`cycles?user_id=eq.${a.id}`, { method: "DELETE" });
   await seedCycles(a.id, [28]); // 2회
   x = await rpc(a, "my_health");
   check(
@@ -228,7 +245,7 @@ try {
   );
 
   // 편차 큰 경우
-  await admin("cycles?id=not.is.null", { method: "DELETE" });
+  await admin(`cycles?user_id=eq.${a.id}`, { method: "DELETE" });
   await seedCycles(a.id, [21, 40, 24, 45]);
   x = await rpc(a, "my_health");
   check(
@@ -239,7 +256,7 @@ try {
   );
 
   // ── 3. 상대에게 나가는 것 ─────────────────────────────────────
-  await admin("cycles?id=not.is.null", { method: "DELETE" });
+  await admin(`cycles?user_id=eq.${a.id}`, { method: "DELETE" });
   await seedCycles(a.id, [28, 29, 28]);
   await admin("cycles?user_id=eq." + a.id + "&period_start=eq." + daysAgo(0), {
     method: "PATCH",
@@ -338,7 +355,7 @@ try {
     JSON.stringify(q),
   );
 
-  await admin("conditions?id=not.is.null", { method: "DELETE" });
+  await admin(`conditions?on_date=eq.${TODAY}`, { method: "DELETE" });
   await admin("notification_queue?id=not.is.null", { method: "DELETE" });
   await admin("expenses?memo=like.검증-건강*", { method: "DELETE" });
 
@@ -355,7 +372,7 @@ try {
   // ── 5-2. 소급 입력 ───────────────────────────────────────────
   //
   // 시작일을 놓치는 일이 잦다. 달력에서 지난 날짜를 눌러 넣을 수 있어야 한다.
-  await admin("cycles?id=not.is.null", { method: "DELETE" });
+  await admin(`cycles?user_id=eq.${a.id}`, { method: "DELETE" });
 
   x = await rpc(a, "log_period_start", { p_date: daysAgo(40) });
   check(
@@ -383,6 +400,38 @@ try {
     JSON.stringify(r),
   );
 
+  // 기록 한가운데를 시작으로 누르면 겹치는 기록이 생기면 안 된다
+  await admin(`cycles?user_id=eq.${a.id}`, { method: "DELETE" });
+  await rpc(a, "log_period_start", { p_date: daysAgo(20) });
+  await rpc(a, "log_period_end", { p_date: daysAgo(16) });
+  await rpc(a, "log_period_start", { p_date: daysAgo(18) });
+  r = await (
+    await admin(`cycles?select=period_start,period_end&user_id=eq.${a.id}`)
+  ).json();
+  check(
+    "기록 안의 날짜를 시작으로 눌러도 기록이 겹치지 않는다",
+    "겹치면 간격이 5일짜리로 잡혀 필터에 버려지고, 목록만 엉망이 된다",
+    r.length === 1 && r[0].period_start === daysAgo(18),
+    JSON.stringify(r),
+  );
+
+  // 시작을 끝 뒤로 옮기면 끝을 비운다. 기록이 사라지는 것보다 낫다.
+  // 이 시점의 기록은 daysAgo(18)~daysAgo(16). 3일 규칙에 걸리는 날짜를 쓴다.
+  await rpc(a, "log_period_start", { p_date: daysAgo(15) });
+  r = await (
+    await admin(`cycles?select=period_start,period_end&user_id=eq.${a.id}`)
+  ).json();
+  check(
+    "시작을 끝보다 뒤로 옮기면 끝이 비워진다",
+    "end_after_start 제약에 걸려 저장이 통째로 실패하면 고칠 방법이 없어진다",
+    r.length === 1 && r[0].period_start === daysAgo(15) && r[0].period_end === null,
+    JSON.stringify(r),
+  );
+
+  await admin(`cycles?user_id=eq.${a.id}`, { method: "DELETE" });
+  await rpc(a, "log_period_start", { p_date: daysAgo(40) });
+  await rpc(a, "log_period_start", { p_date: daysAgo(39) });
+
   // 열린 기록이 둘일 때 오늘 '끝났어요'가 옛것까지 닫으면 안 된다
   await rpc(a, "log_period_start", { p_date: daysAgo(2) });
   await rpc(a, "log_period_end", {});
@@ -396,7 +445,7 @@ try {
     JSON.stringify(r),
   );
 
-  await admin("cycles?id=not.is.null", { method: "DELETE" });
+  await admin(`cycles?user_id=eq.${a.id}`, { method: "DELETE" });
   await seedCycles(a.id, [28, 29, 28]);
   await setSharing(a.id, { share_cycle: true });
 
@@ -495,6 +544,14 @@ try {
   );
 } finally {
   await wipe();
+  // 스냅샷해 둔 실제 컨디션을 되돌린다
+  if (Array.isArray(beforeConditions) && beforeConditions.length) {
+    await admin("conditions", {
+      method: "POST",
+      headers: { Prefer: "return=minimal,resolution=merge-duplicates" },
+      body: JSON.stringify(beforeConditions),
+    });
+  }
   await admin("notification_queue?id=not.is.null", { method: "DELETE" });
   await admin("expenses?memo=like.검증-건강*", { method: "DELETE" });
   for (const s of beforeSharing) {
