@@ -27,14 +27,17 @@ import { SignOutButton } from "./sign-out";
  *
  * 6단계에서 지출이 들어오면서 D-day를 이 자리에서 뺐다.
  * D-day는 메인에 항상 띠로 떠 있어 한 번에 닿는다. 지출은 그런 자리가 없다.
+ *
+ * short는 하단 탭 전용이다. 폭이 좁아 두 단어가 줄바꿈되거나 잘린다.
+ * 화면 안에서는 항상 제대로 된 이름(our Pay)이 나온다.
  */
 const ITEMS = [
   { href: "/", icon: "📅", label: "Calendar" },
   { href: "/places", icon: "📍", label: "Places" },
   { href: "/lists", icon: "☑", label: "List" },
-  { href: "/expenses", icon: "💸", label: "our Pay" },
+  { href: "/expenses", icon: "💸", label: "our Pay", short: "Pay" },
   { href: "/settings", icon: "⚙", label: "설정" },
-];
+] satisfies { href: string; icon: string; label: string; short?: string }[];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const items = ITEMS;
@@ -81,7 +84,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 className="flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-[11px] text-ash"
               >
                 <span className="text-lg leading-none">{i.icon}</span>
-                {i.label}
+                {"short" in i ? i.short : i.label}
               </Link>
             </li>
           ))}

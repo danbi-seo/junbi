@@ -55,14 +55,22 @@ function Pair({
 
 export function Brand({ href = "/" }: { href?: string }) {
   return (
-    <Link href={href} className="flex items-center gap-2">
+    <Link href={href} className="flex items-center gap-2.5">
+      {/*
+       * 원본 mark.png는 824×824 정사각형인데 캐릭터가 518×374만 차지한다.
+       * 나머지는 빈 여백이라 32px 상자에 넣으면 실제로는 20×14px로 그려져
+       * 뭔지 알아볼 수가 없다. 여백을 잘라낸 -tight 판을 쓴다.
+       *
+       * 캐릭터가 가로로 길어서(4:3) 정사각형 size-*를 쓰면 다시 줄어든다.
+       * 높이만 고정하고 너비는 비율대로 둔다.
+       */}
       <Pair
-        light="/mark.png"
-        dark="/mark-dark.png"
+        light="/mark-tight.png"
+        dark="/mark-dark-tight.png"
         alt=""
-        width={856}
-        height={856}
-        className="size-8 shrink-0"
+        width={580}
+        height={436}
+        className="h-10 w-auto shrink-0"
       />
       <span className="font-display text-xl tracking-tight">JUNBI</span>
     </Link>

@@ -11,10 +11,10 @@
  *   오프라인일 때는 안내 화면만 보여준다.
  */
 
-const CACHE = "junbi-v1";
+const CACHE = "junbi-v2";
 const OFFLINE = "/offline.html";
 
-const SHELL = [OFFLINE, "/icons/192.png", "/mark.png", "/mark-dark.png"];
+const SHELL = [OFFLINE, "/icons/192.png", "/mark-tight.png", "/mark-dark-tight.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));
