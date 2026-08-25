@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { setStatus, clearStatus } from "@/app/actions/presence";
@@ -78,6 +78,16 @@ export function MyStatus({
   const [kind, setKind] = useState<Exclude<StatusKind, "free">>("activity");
   const [hours, setHours] = useState(4);
 
+  // Esc로 닫힌다. 열어 놓고 나갈 길이 하나뿐이면 갇힌 느낌이 든다.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   function apply(emoji: string, label: string) {
     start(async () => {
       await setStatus(kind, emoji, label, hours);
@@ -87,9 +97,10 @@ export function MyStatus({
   }
 
   return (
-    <div className="flex flex-col items-end gap-1.5">
+    <div className="relative flex flex-col items-end gap-1.5">
       <button
         type="button"
+        aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className="flex flex-wrap items-center justify-end gap-1.5"
       >
@@ -103,8 +114,23 @@ export function MyStatus({
         <span className="text-xs text-ash">▾</span>
       </button>
 
+      {/*
+       * 바깥을 눌러도 닫힌다. 아래 화면을 가리지 않게 투명하게 둔다.
+       * 하단 탭이 z-10이라 그 위에 온다.
+       */}
       {open && (
-        <div className="mt-1 w-full max-w-sm rounded-xl border border-line bg-card p-4">
+        <button
+          type="button"
+          aria-label="닫기"
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 z-20 cursor-default"
+        />
+      )}
+
+      {open && (
+        // 흐름에서 띄운다. 안에 두면 열 때마다 아래 내용이 통째로 밀려 내려간다.
+        // 오른쪽 정렬 기준이라 right-0, 좁은 화면에서는 여백만큼 줄인다.
+        <div className="absolute top-full right-0 z-30 mt-2 w-[min(22rem,calc(100vw-3rem))] rounded-xl border border-line bg-card p-4 shadow-lg">
           <div className="flex gap-2 text-sm">
             {(["activity", "condition"] as const).map((k) => (
               <button
