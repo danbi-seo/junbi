@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getContext } from "@/lib/session";
 import { Brand } from "@/app/brand";
@@ -61,6 +62,16 @@ export default async function SettingsPage() {
       <ReminderCard
         initial={prefs?.recv_event_upcoming === false ? 0 : (prefs?.upcoming_min ?? 60)}
       />
+
+      <Link
+        href="/health"
+        className="rounded-xl border border-line bg-card p-5"
+      >
+        <h2 className="font-display text-lg">내 몸</h2>
+        <p className="mt-2 text-xs leading-5 text-ash">
+          컨디션·생리 주기 기록과 공유 설정. 기본은 전부 꺼져 있어요.
+        </p>
+      </Link>
 
       <section className="rounded-xl border border-line bg-card p-5">
         <h2 className="font-display text-lg">연결</h2>

@@ -149,6 +149,16 @@ export function FreeView({
                   </p>
                 )}
 
+                {/* 같은 이유로 본인 화면에만 나온다.
+                    앱이 상대에게 대신 지적하면 "그때 만나지 말자"를
+                    상대가 먼저 말하는 상황이 된다 → docs/19-health.md G */}
+                {s.my_cycle_window && (
+                  <p className="mt-2 text-xs leading-5 text-ash">
+                    ⚠️ 생리 예상 기간이에요. {partnerLabel}님 화면에는 순위가
+                    조금 낮은 후보로만 보여요.
+                  </p>
+                )}
+
                 {proposed === s.starts_at ? (
                   <p className="mt-3 text-xs text-ok">
                     제안했어요. {partnerLabel}님이 수락하면 확정돼요.

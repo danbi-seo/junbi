@@ -11,6 +11,7 @@ import {
   type AnniversaryRow,
 } from "@/lib/anniversary";
 import type { CurrentStatus } from "@/lib/presence";
+import { energyOf, type PartnerHealth } from "@/lib/health";
 import { Calendar } from "./calendar";
 import { MyStatus, PartnerStatus } from "./status-chips";
 import { EventRow } from "./event-row";
@@ -96,6 +97,11 @@ export default async function HomePage(props: PageProps<"/">) {
       : Promise.resolve({ data: [] }),
   ]);
 
+  // 상대 건강. partner_health()가 켜진 항목만 계산해서 내보낸다.
+  // 원본 테이블을 읽지 않는다 — cycles에는 짝 조회 정책이 아예 없다.
+  const { data: ph } = await supabase.rpc("partner_health");
+  const partnerHealth = (ph ?? null) as PartnerHealth | null;
+
   const dday = headline(
     upcomingAnniversaries({
       startedOn: couple?.started_on ?? null,
@@ -116,7 +122,13 @@ export default async function HomePage(props: PageProps<"/">) {
       <Live />
 
       {/* 내 상태는 우상단에 작게. 내 상태는 내가 이미 알고 있다. */}
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex items-center justify-end gap-3">
+        <Link
+          href="/health"
+          className="text-sm text-ash underline underline-offset-4"
+        >
+          내 몸
+        </Link>
         <MyStatus
           statuses={(mine ?? []) as CurrentStatus[]}
           timeZone={ctx.timeZone}
@@ -135,6 +147,20 @@ export default async function HomePage(props: PageProps<"/">) {
               statuses={(theirs ?? []) as CurrentStatus[]}
               timeZone={ctx.timeZone}
             />
+            {/* 켠 것만 뜬다. 안 켰으면 이 줄 자체가 없다 —
+                '꺼져 있음'과 '기록이 없음'이 구별되면 안 된다. */}
+            {partnerHealth?.periodActive && (
+              <p className="mt-1 text-sm text-ash">🩸 생리 중</p>
+            )}
+            {partnerHealth?.condition?.energy && (
+              <p className="mt-1 text-sm text-ash">
+                {energyOf(partnerHealth.condition.energy)?.emoji}{" "}
+                {energyOf(partnerHealth.condition.energy)?.label}
+                {partnerHealth.condition.painAreas?.length
+                  ? " · " + partnerHealth.condition.painAreas.join(" · ")
+                  : ""}
+              </p>
+            )}
           </>
         ) : (
           <p className="text-ash">아직 연결된 상대가 없어요.</p>

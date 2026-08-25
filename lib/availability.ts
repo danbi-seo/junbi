@@ -12,6 +12,8 @@ export type FreeSlot = {
   score: number;
   /** 내 비공개 일정과 겹침. 상대 화면에는 이 값이 오지 않는다. */
   my_private_conflict: boolean;
+  /** 내 생리 예상 기간과 겹침. 상대 화면에는 항상 false다. */
+  my_cycle_window: boolean;
 };
 
 export type Preset = {
