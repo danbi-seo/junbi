@@ -41,7 +41,10 @@ export default async function DayPage(props: PageProps<"/day/[date]">) {
         <span className="md:hidden">
           <Brand />
         </span>
-        <h1 className="font-display text-lg">{formatDay(date)}</h1>
+        <div className="text-center">
+          <div className="font-display text-lg">Our Day</div>
+          <div className="text-xs text-ash">{formatDay(date)}</div>
+        </div>
         <div className="flex gap-3 text-sm text-ash">
           <Link href={`/day/${shift(date, -1)}`}>‹</Link>
           <Link href={`/day/${shift(date, 1)}`}>›</Link>
