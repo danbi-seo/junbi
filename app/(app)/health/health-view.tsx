@@ -20,6 +20,7 @@ import {
   SYMPTOMS,
   buildMarks,
   delayMessage,
+  expand,
   isoDay,
   varianceLabel,
   type DayMark,
@@ -74,8 +75,8 @@ export function HealthView({
           health={h}
           timeZone={timeZone}
           pending={pending}
-          onStart={() => run(() => logPeriodStart())}
-          onEnd={() => run(() => logPeriodEnd())}
+          onStart={(d) => run(() => logPeriodStart(d))}
+          onEnd={(d) => run(() => logPeriodEnd(d))}
           onAck={(id) => run(() => ackOngoing(id))}
           onDelete={(id) => run(() => deletePeriod(id))}
         />
@@ -347,13 +348,14 @@ function CycleCard({
   health: MyHealth;
   timeZone: string;
   pending: boolean;
-  onStart: () => void;
-  onEnd: () => void;
+  onStart: (date?: string) => void;
+  onEnd: (date?: string) => void;
   onAck: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
   const [offset, setOffset] = useState(0);
   const [showBasis, setShowBasis] = useState(false);
+  const [picked, setPicked] = useState<string | null>(null);
 
   const marks = useMemo(
     () => buildMarks(health.periods, health.prediction),
@@ -377,6 +379,10 @@ function CycleCard({
       month: "long",
       day: "numeric",
     }).format(new Date(iso + "T00:00:00Z"));
+
+  /** 그 날짜를 품고 있는 기록. 종료를 안 눌렀으면 평균 5일로 본다. */
+  const owningPeriod = (iso: string) =>
+    (health.periods ?? []).find((p) => expand(p.from, p.to).includes(iso)) ?? null;
 
   return (
     <section className="rounded-xl border border-line bg-card p-5">
@@ -449,10 +455,43 @@ function CycleCard({
             new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth(), i + 1)),
           );
           return (
-            <Cell key={iso} day={i + 1} mark={marks.get(iso) ?? null} isToday={iso === today} />
+            <Cell
+              key={iso}
+              day={i + 1}
+              mark={marks.get(iso) ?? null}
+              isToday={iso === today}
+              // 앞으로의 날짜는 기록할 수 없다. 서버도 막지만 눌리지 않게 한다.
+              disabled={iso > today}
+              selected={iso === picked}
+              onClick={() => setPicked(iso === picked ? null : iso)}
+            />
           );
         })}
       </div>
+
+      {/* 과거 날짜 소급 입력. 시작일을 놓치는 일이 잦은데,
+          잘못된 기록 하나가 평균을 통째로 망가뜨린다 → docs/19-health.md D */}
+      {picked && (
+        <DaySheet
+          label={fmt(picked)}
+          owning={owningPeriod(picked)}
+          hasOpen={Boolean(health.openPeriodStart)}
+          pending={pending}
+          onStart={() => {
+            onStart(picked);
+            setPicked(null);
+          }}
+          onEnd={() => {
+            onEnd(picked);
+            setPicked(null);
+          }}
+          onDelete={(id) => {
+            onDelete(id);
+            setPicked(null);
+          }}
+          onClose={() => setPicked(null)}
+        />
+      )}
 
       {/* 달력에 뜨는 건 두 가지다. 생리 주기 안에서만 기록과 예상을 나눈다 —
           추정치가 확정된 기록처럼 보이면 과신한다.
@@ -567,19 +606,112 @@ function Cell({
   day,
   mark,
   isToday,
+  disabled,
+  selected,
+  onClick,
 }: {
   day: number;
   mark: DayMark;
   isToday: boolean;
+  disabled: boolean;
+  selected: boolean;
+  onClick: () => void;
 }) {
   return (
-    <div
-      className={`flex aspect-square flex-col items-center justify-center rounded-lg text-sm ${
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`flex aspect-square flex-col items-center justify-center rounded-lg text-sm disabled:opacity-30 ${
         mark ? MARK_STYLE[mark] : ""
-      } ${isToday ? "ring-1 ring-ink" : ""}`}
+      } ${selected ? "ring-2 ring-slot-a" : isToday ? "ring-1 ring-ink" : ""}`}
     >
       <span>{day}</span>
       <span className="text-[9px] leading-none">{mark ? MARK_GLYPH[mark] : " "}</span>
+    </button>
+  );
+}
+
+/**
+ * 날짜를 눌렀을 때 뜨는 시트.
+ *
+ * 시작일을 놓치는 일이 잦고, 잘못된 기록 하나가 평균을 통째로 망가뜨린다.
+ * 고치기 어려우면 그냥 앱을 안 쓴다 → docs/19-health.md D
+ */
+function DaySheet({
+  label,
+  owning,
+  hasOpen,
+  pending,
+  onStart,
+  onEnd,
+  onDelete,
+  onClose,
+}: {
+  label: string;
+  owning: { id: string; from: string; to: string | null } | null;
+  hasOpen: boolean;
+  pending: boolean;
+  onStart: () => void;
+  onEnd: () => void;
+  onDelete: (id: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="mt-4 rounded-lg border border-line bg-paper p-4">
+      <div className="flex items-center justify-between">
+        <p className="font-medium">{label}</p>
+        <button type="button" onClick={onClose} aria-label="닫기" className="px-2 text-ash">
+          ✕
+        </button>
+      </div>
+
+      {owning && (
+        <p className="mt-1 text-xs text-ash">
+          {owning.to ? "기록된 기간 안이에요" : "진행 중인 기록이에요"}
+        </p>
+      )}
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={pending}
+          onClick={onStart}
+          className="rounded-lg border border-line bg-card px-3 py-2 text-sm disabled:opacity-40"
+        >
+          이날 시작했어요
+        </button>
+
+        {/* 끝난 날은 시작한 기록이 있어야 의미가 있다 */}
+        {(hasOpen || owning) && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={onEnd}
+            className="rounded-lg border border-line bg-card px-3 py-2 text-sm disabled:opacity-40"
+          >
+            이날 끝났어요
+          </button>
+        )}
+
+        {owning && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => {
+              if (!confirm("이 기록을 지울까요?")) return;
+              onDelete(owning.id);
+            }}
+            className="rounded-lg border border-line px-3 py-2 text-sm text-danger disabled:opacity-40"
+          >
+            기록 지우기
+          </button>
+        )}
+      </div>
+
+      <p className="mt-3 text-xs leading-5 text-ash">
+        지난 날짜를 눌러 소급 입력할 수 있어요. 앞으로의 날짜는 기록할 수 없어요.
+      </p>
     </div>
   );
 }

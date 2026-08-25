@@ -352,6 +352,54 @@ try {
     JSON.stringify(q),
   );
 
+  // ── 5-2. 소급 입력 ───────────────────────────────────────────
+  //
+  // 시작일을 놓치는 일이 잦다. 달력에서 지난 날짜를 눌러 넣을 수 있어야 한다.
+  await admin("cycles?id=not.is.null", { method: "DELETE" });
+
+  x = await rpc(a, "log_period_start", { p_date: daysAgo(40) });
+  check(
+    "지난 날짜로 시작을 기록할 수 있다",
+    "시작일을 놓치면 그 주기가 통째로 빠지고 평균이 망가진다",
+    x.status === 200 && typeof x.body === "string",
+    `status ${x.status} ${JSON.stringify(x.body)}`,
+  );
+
+  x = await rpc(a, "log_period_start", { p_date: daysAgo(-1) });
+  check(
+    "앞으로의 날짜는 기록할 수 없다",
+    "아직 오지 않은 날을 기록하면 예측이 미래 기준으로 어긋난다",
+    x.status >= 400,
+    `status ${x.status}`,
+  );
+
+  // 하루 차이로 두 번 누르는 건 오타로 본다
+  await rpc(a, "log_period_start", { p_date: daysAgo(39) });
+  r = await (await admin(`cycles?select=period_start&user_id=eq.${a.id}`)).json();
+  check(
+    "하루 차이로 다시 누르면 기록이 늘지 않고 날짜만 옮겨진다",
+    "이틀짜리 유령 주기가 생기면 간격이 반토막 나고 예측이 무너진다",
+    r.length === 1 && r[0].period_start === daysAgo(39),
+    JSON.stringify(r),
+  );
+
+  // 열린 기록이 둘일 때 오늘 '끝났어요'가 옛것까지 닫으면 안 된다
+  await rpc(a, "log_period_start", { p_date: daysAgo(2) });
+  await rpc(a, "log_period_end", {});
+  r = await (
+    await admin(`cycles?select=period_start,period_end&user_id=eq.${a.id}&order=period_start`)
+  ).json();
+  check(
+    "오늘 종료가 지난달 기록까지 닫지 않는다",
+    "소급 입력을 붙이면 열린 기록이 둘이 될 수 있다. 그때 둘 다 닫히면 기간이 통째로 틀어진다",
+    r.length === 2 && r[0].period_end === null && r[1].period_end === daysAgo(0),
+    JSON.stringify(r),
+  );
+
+  await admin("cycles?id=not.is.null", { method: "DELETE" });
+  await seedCycles(a.id, [28, 29, 28]);
+  await setSharing(a.id, { share_cycle: true });
+
   // ── 6. 끄면 파기 ─────────────────────────────────────────────
   let before = await (await admin(`cycles?select=id&user_id=eq.${a.id}`)).json();
   await rpc(a, "set_health_sharing", { p_module: false });
