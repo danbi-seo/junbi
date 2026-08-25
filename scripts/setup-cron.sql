@@ -2,16 +2,21 @@
 --
 -- ┌─ 실행 방법 ────────────────────────────────────────────────┐
 -- │ 1. Supabase 대시보드 → Database → Extensions에서            │
--- │    pg_cron, pg_net을 켠다 (아래 create extension이 대신     │
--- │    해 주지만, 대시보드에서 켜는 쪽이 확실하다)              │
+-- │    pg_cron, pg_net을 켠다                                   │
 -- │ 2. SQL Editor → New query                                   │
 -- │ 3. 이 파일 전체를 붙여넣는다                                │
--- │ 4. 아래 '여기 두 줄'의 CRON_SECRET을 .env.local 값으로 채운다│
+-- │ 4. 아래 '여기 한 줄'의 CRON_SECRET을 .env.local 값으로 채운다│
 -- │ 5. Run                                                      │
 -- │ 6. 맨 아래 확인 쿼리에 job 3개가 보이면 끝                  │
 -- └────────────────────────────────────────────────────────────┘
 --
--- 여러 번 실행해도 안전하다. 기존 job을 지우고 다시 만든다.
+-- 여러 번 실행해도 안전하다. 기존 job과 비밀값을 덮어쓴다.
+--
+-- 비밀값은 Vault에 넣는다.
+--   alter database postgres set ... 은 쓸 수 없다.
+--   Supabase의 postgres 역할은 superuser가 아니라서 42501이 난다.
+--   Vault는 Supabase가 이 용도로 주는 저장소다. 암호화돼서 들어가고,
+--   cron job이 돌 때만 복호화해서 읽는다.
 --
 -- 큐에 쌓인 알림을 5분마다 꺼내 보낸다.
 -- 1분마다는 과하다. 두 사람 쓰는 앱에서 알림 지연은 체감이 안 되고
@@ -19,17 +24,30 @@
 --
 -- pg_cron의 시각은 UTC다. '0 19'는 한국 시간 새벽 4시다.
 
--- ── 여기 두 줄만 채우세요 ──────────────────────────────────────
---   CRON_SECRET은 .env.local / Vercel 환경변수와 **같은 값**이어야 합니다.
---   서비스 키를 SQL에 직접 쓰지 않고 DB 설정에 넣습니다.
-alter database postgres set app.push_url    = 'https://junbi.vercel.app/api/push/send';
-alter database postgres set app.cron_secret = '여기에_CRON_SECRET_붙여넣기';
--- ──────────────────────────────────────────────────────────────
-
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 
+-- ── 여기 한 줄만 채우세요 ──────────────────────────────────────
+--   CRON_SECRET은 .env.local / Vercel 환경변수와 **같은 값**이어야 합니다.
+--   따옴표를 빼면 소문자로 바뀌어 저장되니 반드시 작은따옴표로 감싸세요.
+do $$
+declare
+  v_secret text := '여기에_CRON_SECRET_붙여넣기';
+  v_id     uuid;
+begin
+  select id into v_id from vault.secrets where name = 'junbi_cron_secret';
+  if v_id is null then
+    perform vault.create_secret(v_secret, 'junbi_cron_secret', 'JUNBI 알림 발송 라우트 인증');
+  else
+    perform vault.update_secret(v_id, v_secret);
+  end if;
+end $$;
+-- ──────────────────────────────────────────────────────────────
+
 -- ── 1. 알림 발송 (5분마다) ────────────────────────────────────
+--
+-- 발송 주소는 비밀이 아니라 그냥 적는다. 공개된 엔드포인트이고,
+-- 자격 증명은 Authorization 헤더가 한다.
 select cron.unschedule('push-dispatch')
  where exists (select 1 from cron.job where jobname = 'push-dispatch');
 
@@ -38,9 +56,12 @@ select cron.schedule(
   '*/5 * * * *',
   $job$
     select net.http_post(
-      url     := current_setting('app.push_url'),
+      url     := 'https://junbi.vercel.app/api/push/send',
       headers := jsonb_build_object(
-                   'Authorization', 'Bearer ' || current_setting('app.cron_secret'),
+                   'Authorization', 'Bearer ' || (
+                     select decrypted_secret from vault.decrypted_secrets
+                      where name = 'junbi_cron_secret'
+                   ),
                    'Content-Type',  'application/json'
                  ),
       body    := '{}'::jsonb
@@ -69,12 +90,18 @@ $job$);
 -- job 3개가 active = true 로 보이면 성공이다.
 select jobid, jobname, schedule, active from cron.job order by jobid;
 
--- 5분 기다리기 싫으면 이 줄만 따로 선택해서 Run —
+-- 비밀값이 제대로 들어갔는지 (값 자체는 찍지 않는다)
+--   select name, length(decrypted_secret) as 길이
+--     from vault.decrypted_secrets where name = 'junbi_cron_secret';
+
+-- 5분 기다리기 싫으면 이 블록만 따로 선택해서 Run —
 -- 지금 즉시 한 번 발송한다.
 --   select net.http_post(
---     url     := current_setting('app.push_url'),
+--     url     := 'https://junbi.vercel.app/api/push/send',
 --     headers := jsonb_build_object(
---                  'Authorization', 'Bearer ' || current_setting('app.cron_secret'),
+--                  'Authorization', 'Bearer ' || (
+--                    select decrypted_secret from vault.decrypted_secrets
+--                     where name = 'junbi_cron_secret'),
 --                  'Content-Type',  'application/json'),
 --     body    := '{}'::jsonb);
 
