@@ -6,7 +6,7 @@ import type { MyHealth } from "@/lib/health";
 import { Brand } from "@/app/brand";
 import { HealthView } from "./health-view";
 
-export const metadata: Metadata = { title: "내 몸 · JUNBI" };
+export const metadata: Metadata = { title: "컨디션 · JUNBI" };
 
 // 건강 정보는 실시간일 필요가 전혀 없다.
 // <Live />를 붙이지 않는다 — cycles·conditions는 publication에도 없다.
@@ -23,7 +23,7 @@ export default async function HealthPage() {
         <span className="md:hidden">
           <Brand />
         </span>
-        <h1 className="font-display text-lg">내 몸</h1>
+        <h1 className="font-display text-lg">컨디션</h1>
       </div>
 
       <HealthView

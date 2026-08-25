@@ -197,7 +197,7 @@ function ConditionCard({
 
   return (
     <section className="rounded-xl border border-line bg-card p-5">
-      <h2 className="font-display text-lg">오늘 컨디션</h2>
+      <h2 className="font-display text-lg">오늘</h2>
 
       <p className="mt-4 mb-2 text-sm text-ash">기운</p>
       <div className="flex gap-2">

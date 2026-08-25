@@ -127,7 +127,7 @@ export default async function HomePage(props: PageProps<"/">) {
           href="/health"
           className="text-sm text-ash underline underline-offset-4"
         >
-          내 몸
+          컨디션
         </Link>
         <MyStatus
           statuses={(mine ?? []) as CurrentStatus[]}

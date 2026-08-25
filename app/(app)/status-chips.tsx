@@ -50,7 +50,7 @@ export function PartnerStatus({
   statuses: CurrentStatus[];
   timeZone: string;
 }) {
-  // 컨디션은 여기로 나오지 않는다. '내 몸'의 share_condition이 유일한 통로다.
+  // 컨디션은 여기로 나오지 않는다. '컨디션' 화면의 share_condition이 유일한 통로다.
   // set_status가 이미 거부하지만, 옛 데이터가 남아 있어도 새지 않게 한 번 더 거른다.
   const shown = statuses.filter((s) => s.kind !== "condition");
 
@@ -188,10 +188,12 @@ export function MyStatus({
             </div>
           )}
 
+          {/* 화면 이름이 '컨디션'이라 "컨디션은 컨디션에서"가 된다.
+              무엇을 적는 곳인지로 풀어 쓴다. */}
           <p className="mt-3 text-xs leading-5 text-ash">
-            컨디션은{" "}
+            기운과 아픈 곳은{" "}
             <Link href="/health" className="underline underline-offset-4">
-              내 몸
+              컨디션
             </Link>
             에서 기록해요. 상대에게 보여줄지는 거기서 따로 정할 수 있어요.
           </p>

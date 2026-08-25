@@ -67,9 +67,9 @@ export default async function SettingsPage() {
         href="/health"
         className="rounded-xl border border-line bg-card p-5"
       >
-        <h2 className="font-display text-lg">내 몸</h2>
+        <h2 className="font-display text-lg">컨디션</h2>
         <p className="mt-2 text-xs leading-5 text-ash">
-          컨디션·생리 주기 기록과 공유 설정. 기본은 전부 꺼져 있어요.
+          기운·아픈 곳과 생리 주기 기록, 공유 설정. 기본은 전부 꺼져 있어요.
         </p>
       </Link>
 
