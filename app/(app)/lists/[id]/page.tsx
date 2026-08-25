@@ -6,6 +6,7 @@ import { getContext } from "@/lib/session";
 import { KIND_LABEL, type Checklist, type ChecklistItem } from "@/lib/checklist";
 import { Brand } from "@/app/brand";
 import { Items } from "./items";
+import { DeleteList } from "./delete-list";
 
 export const metadata: Metadata = { title: "체크리스트 · JUNBI" };
 
@@ -59,10 +60,17 @@ export default async function ListPage(props: PageProps<"/lists/[id]">) {
         }
       />
 
-      <p className="text-xs leading-5 text-ash">
-        상대가 체크하면 바로 반영돼요. 완료 알림은 기본으로 꺼져 있어요 —
-        마트에서 체크할 때마다 울리면 곤란하니까요.
-      </p>
+      <div className="flex items-start justify-between gap-4 border-t border-line pt-4">
+        <p className="text-xs leading-5 text-ash">
+          상대가 체크하면 바로 반영돼요. 완료 알림은 기본으로 꺼져 있어요 —
+          마트에서 체크할 때마다 울리면 곤란하니까요.
+        </p>
+        <DeleteList
+          checklistId={list.id}
+          title={list.title}
+          itemCount={items?.length ?? 0}
+        />
+      </div>
     </main>
   );
 }

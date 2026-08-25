@@ -173,7 +173,7 @@ export default async function HomePage(props: PageProps<"/">) {
             href={`/day/${selected}`}
             className="text-ash underline underline-offset-4"
           >
-            이음새 보기
+            둘의 하루
           </Link>
         </div>
       </div>

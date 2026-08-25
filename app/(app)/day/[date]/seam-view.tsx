@@ -137,6 +137,10 @@ export function SeamView({
         </ul>
       )}
 
+      <p className="mb-2 text-xs leading-5 text-ash">
+        가운데 선을 가로지르는 건 함께 일정이에요. 각자의 일정은 자기 쪽에 있어요.
+      </p>
+
       <div className="grid grid-cols-2 border-b border-line pb-2 text-sm" style={{ paddingLeft: GUTTER }}>
         <span>
           {myEmoji} 나

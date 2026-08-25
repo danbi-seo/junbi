@@ -80,6 +80,24 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/**
+ * 누를 수 있는 것에는 손가락 커서를 준다.
+ *
+ * Tailwind v4부터 button의 기본 커서가 default다.
+ * 컴포넌트마다 cursor-pointer를 붙이면 반드시 빠뜨리는 곳이 생긴다.
+ */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+summary,
+label:has(input[type="checkbox"]),
+label:has(input[type="radio"]) {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
 /* 시각·금액이 흔들리지 않게. 정산 목록에서 특히 티가 난다. */
 .tnum {
   font-variant-numeric: tabular-nums;
