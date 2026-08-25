@@ -520,6 +520,7 @@ try {
   {
     const fs2 = await import("node:fs");
     const src = ["lib/health.ts", "app/(app)/health/health-view.tsx",
+                 "app/(app)/partner-health.tsx",
                  "app/(app)/page.tsx", "app/(app)/free/free-view.tsx"]
       .map((f) => fs2.readFileSync(f, "utf8")).join("\n");
     // 주석에 적힌 '쓰지 말 것' 목록은 제외하고 실제 화면 문구만 본다
@@ -547,6 +548,45 @@ try {
       "disclaimer가 코드에 있다",
       "범례 바로 아래 상시 노출돼야 한다. 상세 화면에만 넣으면 안 본다",
       src.includes("피임이나 임신 계획의 근거로 쓰지 마세요"),
+      "",
+    );
+  }
+
+  // ── 7-2. 상대 화면이 파생값만 그린다 ─────────────────────────
+  //
+  // partner_health()가 안 보내는 값을 화면 코드가 참조하고 있으면,
+  // 언젠가 "왜 안 오지?" 하며 그걸 보내려는 시도가 따라온다.
+  {
+    const fs2 = await import("node:fs");
+    const panel = fs2.readFileSync("app/(app)/partner-health.tsx", "utf8");
+    for (const [field, why] of [
+      ["cycleLength", "주기 길이"],
+      ["variance", "편차"],
+      ["recentGaps", "최근 간격"],
+      ["delayDays", "지연"],
+      ["nextFrom", "다음 예상일"],
+      ["periodDuration", "평균 기간"],
+      [".flow", "생리량"],
+      [".symptoms", "증상"],
+      [".memo", "메모"],
+    ]) {
+      check(
+        `상대 화면 코드가 ${why}를 만지지 않는다`,
+        "partner_health()가 안 보내는 값이다",
+        !panel.includes(field),
+        "",
+      );
+    }
+    check(
+      "상대 달력에도 disclaimer가 붙는다",
+      "추정 구간을 보여주면서 근거를 못 보게 하면, 안내라도 붙어 있어야 한다",
+      panel.includes("CYCLE_COPY.disclaimer"),
+      "",
+    );
+    check(
+      "상대 화면이 본인용 buildMarks를 쓰지 않는다",
+      "buildMarks는 '생리 예상' 구간을 그린다. 예측은 본인 것이다",
+      !panel.includes("buildMarks("),
       "",
     );
   }

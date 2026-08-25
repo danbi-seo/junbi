@@ -26,6 +26,7 @@ import {
   type DayMark,
   type MyHealth,
 } from "@/lib/health";
+import { todayIn } from "@/lib/time";
 
 export function HealthView({
   initial,
@@ -387,15 +388,16 @@ function CycleCard({
     return m;
   }, [health.periods, dur]);
 
-  const base = new Date();
+  // 사용자 시간대 기준. isoDay(new Date())는 UTC라 밤에 하루 어긋난다.
+  const today = todayIn(timeZone);
+  // 달도 today에서 뽑는다. new Date()로 잡으면 월말 밤에 지난달이 열린다.
   const month = new Date(
-    Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + offset, 1),
+    Date.UTC(Number(today.slice(0, 4)), Number(today.slice(5, 7)) - 1 + offset, 1),
   );
   const first = month.getUTCDay();
   const days = new Date(
     Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 0),
   ).getUTCDate();
-  const today = isoDay(new Date());
   const pred = health.prediction;
 
   const fmt = (iso: string) =>

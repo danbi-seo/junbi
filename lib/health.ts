@@ -199,3 +199,36 @@ export function buildMarks(
 
   return marks;
 }
+
+/**
+ * 상대 달력용.
+ *
+ * 본인 달력과 두 가지가 다르다.
+ *
+ *   '생리 예상' 구간이 없다.
+ *     예측 근거가 상대에게 나가지 않으니 그릴 재료 자체가 없다.
+ *     상대가 보는 건 기록된 구간과 임신 가능성 구간, 둘뿐이다.
+ *
+ *   끝을 안 누른 기록은 오늘까지만 칠한다.
+ *     본인 화면은 평균 기간만큼 앞질러 칠하지만, 그건 본인이 자기 몸을
+ *     알고 보는 추정이다. 상대 화면에 미래까지 칠하면 추정이 사실로 읽힌다.
+ *     평균 기간(periodDuration)은 애초에 상대에게 내보내지 않는다.
+ */
+export function buildPartnerMarks(
+  periods: { from: string; to: string | null }[] | undefined,
+  fertileFrom: string | undefined,
+  fertileTo: string | undefined,
+  today: string,
+): Map<string, DayMark> {
+  const marks = new Map<string, DayMark>();
+
+  if (fertileFrom && fertileTo) {
+    for (const d of expand(fertileFrom, fertileTo)) marks.set(d, "fertile");
+  }
+
+  for (const p of periods ?? []) {
+    for (const d of expand(p.from, p.to ?? today)) marks.set(d, "recorded");
+  }
+
+  return marks;
+}

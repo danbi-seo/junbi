@@ -11,11 +11,12 @@ import {
   type AnniversaryRow,
 } from "@/lib/anniversary";
 import type { CurrentStatus } from "@/lib/presence";
-import { energyOf, type PartnerHealth } from "@/lib/health";
+import type { PartnerHealth } from "@/lib/health";
 import { Calendar } from "./calendar";
 import { MyStatus, PartnerStatus } from "./status-chips";
 import { EventRow } from "./event-row";
 import { Live } from "./live";
+import { PartnerHealthChip } from "./partner-health";
 
 
 /**
@@ -139,28 +140,28 @@ export default async function HomePage(props: PageProps<"/">) {
       <header className="mb-8">
         {ctx.partner ? (
           <>
-            <p className="text-lg">
-              <span className="mr-1">{ctx.partner.emoji_key}</span>
-              {ctx.label}
-            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <p className="text-lg">
+                <span className="mr-1">{ctx.partner.emoji_key}</span>
+                {ctx.label}
+              </p>
+              {/*
+               * 건강 정보는 펼쳐야 보인다. 메인은 늘 켜져 있는 화면이라
+               * 옆자리에서도 보이고 사진에도 들어간다 → docs/19-health.md
+               *
+               * 볼 게 없으면 칩 자체가 없다. '꺼져 있음'과 '기록이 없음'이
+               * 구별되면 끄는 행위가 추궁 대상이 된다.
+               */}
+              <PartnerHealthChip
+                health={partnerHealth}
+                partnerLabel={ctx.label}
+                timeZone={ctx.timeZone}
+              />
+            </div>
             <PartnerStatus
               statuses={(theirs ?? []) as CurrentStatus[]}
               timeZone={ctx.timeZone}
             />
-            {/* 켠 것만 뜬다. 안 켰으면 이 줄 자체가 없다 —
-                '꺼져 있음'과 '기록이 없음'이 구별되면 안 된다. */}
-            {partnerHealth?.periodActive && (
-              <p className="mt-1 text-sm text-ash">🩸 생리 중</p>
-            )}
-            {partnerHealth?.condition?.energy && (
-              <p className="mt-1 text-sm text-ash">
-                {energyOf(partnerHealth.condition.energy)?.emoji}{" "}
-                {energyOf(partnerHealth.condition.energy)?.label}
-                {partnerHealth.condition.painAreas?.length
-                  ? " · " + partnerHealth.condition.painAreas.join(" · ")
-                  : ""}
-              </p>
-            )}
           </>
         ) : (
           <p className="text-ash">아직 연결된 상대가 없어요.</p>
