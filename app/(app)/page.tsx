@@ -167,13 +167,13 @@ export default async function HomePage(props: PageProps<"/">) {
         </h3>
         <div className="flex gap-4 text-sm">
           <Link href="/free" className="text-ash underline underline-offset-4">
-            언제 만날까
+            Let&apos;s Meet
           </Link>
           <Link
             href={`/day/${selected}`}
             className="text-ash underline underline-offset-4"
           >
-            Our Day
+            our Day
           </Link>
         </div>
       </div>

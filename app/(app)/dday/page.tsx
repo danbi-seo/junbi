@@ -12,7 +12,7 @@ import {
 import { Brand } from "@/app/brand";
 import { AnnivForm, StartedOnForm, DeleteButton } from "./anniv-form";
 
-export const metadata: Metadata = { title: "기념일 · JUNBI" };
+export const metadata: Metadata = { title: "D-day · JUNBI" };
 
 export default async function DdayPage() {
   const ctx = await getContext();
@@ -46,7 +46,7 @@ export default async function DdayPage() {
         <span className="md:hidden">
           <Brand />
         </span>
-        <h1 className="font-display text-lg">기념일</h1>
+        <h1 className="font-display text-lg">D-day</h1>
       </div>
 
       {!couple?.started_on && <StartedOnForm value={null} />}

@@ -8,7 +8,7 @@ import { Brand } from "@/app/brand";
 import { Live } from "@/app/(app)/live";
 import { NewListForm } from "./new-list";
 
-export const metadata: Metadata = { title: "체크리스트 · JUNBI" };
+export const metadata: Metadata = { title: "our List · JUNBI" };
 
 export default async function ListsPage() {
   const ctx = await getContext();
@@ -43,7 +43,7 @@ export default async function ListsPage() {
         <span className="md:hidden">
           <Brand />
         </span>
-        <h1 className="font-display text-lg">체크리스트</h1>
+        <h1 className="font-display text-lg">our List</h1>
       </div>
 
       {!lists?.length ? (

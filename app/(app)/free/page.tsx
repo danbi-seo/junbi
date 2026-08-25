@@ -4,7 +4,7 @@ import { getContext } from "@/lib/session";
 import { Brand } from "@/app/brand";
 import { FreeView } from "./free-view";
 
-export const metadata: Metadata = { title: "언제 만날까 · JUNBI" };
+export const metadata: Metadata = { title: "Let's Meet · JUNBI" };
 
 export default async function FreePage() {
   const ctx = await getContext();
@@ -14,7 +14,7 @@ export default async function FreePage() {
   if (!ctx.partner) {
     return (
       <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-6 py-8">
-        <h1 className="font-display text-lg">언제 만날까</h1>
+        <h1 className="font-display text-lg">Let&apos;s Meet</h1>
         <p className="text-ash">상대와 연결되면 쓸 수 있어요.</p>
       </main>
     );
@@ -26,7 +26,7 @@ export default async function FreePage() {
         <span className="md:hidden">
           <Brand />
         </span>
-        <h1 className="font-display text-lg">언제 만날까</h1>
+        <h1 className="font-display text-lg">Let&apos;s Meet</h1>
       </div>
 
       <FreeView timeZone={ctx.timeZone} partnerLabel={ctx.label} />

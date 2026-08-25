@@ -28,9 +28,9 @@ import { SignOutButton } from "./sign-out";
  */
 const ITEMS = [
   { href: "/", icon: "📅", label: "달력" },
-  { href: "/places", icon: "📍", label: "장소" },
-  { href: "/lists", icon: "☑", label: "목록" },
-  { href: "/dday", icon: "💜", label: "기념일" },
+  { href: "/places", icon: "📍", label: "Places" },
+  { href: "/lists", icon: "☑", label: "List" },
+  { href: "/dday", icon: "💜", label: "D-day" },
   { href: "/settings", icon: "⚙", label: "설정" },
 ];
 

@@ -8,7 +8,7 @@ import { Brand } from "@/app/brand";
 import { Items } from "./items";
 import { DeleteList } from "./delete-list";
 
-export const metadata: Metadata = { title: "체크리스트 · JUNBI" };
+export const metadata: Metadata = { title: "our List · JUNBI" };
 
 export default async function ListPage(props: PageProps<"/lists/[id]">) {
   const { id } = await props.params;

@@ -7,7 +7,7 @@ import { Brand } from "@/app/brand";
 import { Live } from "@/app/(app)/live";
 import { PlacesView } from "./places-view";
 
-export const metadata: Metadata = { title: "가보고 싶은 곳 · JUNBI" };
+export const metadata: Metadata = { title: "our Places · JUNBI" };
 
 export default async function PlacesPage() {
   const ctx = await getContext();
@@ -30,7 +30,7 @@ export default async function PlacesPage() {
         <span className="md:hidden">
           <Brand />
         </span>
-        <h1 className="font-display text-lg">가보고 싶은 곳</h1>
+        <h1 className="font-display text-lg">our Places</h1>
       </div>
 
       <PlacesView

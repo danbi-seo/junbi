@@ -42,7 +42,7 @@ export default async function DayPage(props: PageProps<"/day/[date]">) {
           <Brand />
         </span>
         <div className="text-center">
-          <div className="font-display text-lg">Our Day</div>
+          <div className="font-display text-lg">our Day</div>
           <div className="text-xs text-ash">{formatDay(date)}</div>
         </div>
         <div className="flex gap-3 text-sm text-ash">
