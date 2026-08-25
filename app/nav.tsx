@@ -27,7 +27,7 @@ import { SignOutButton } from "./sign-out";
  * 4단계 뒤에 장소·지출이 들어오면 기념일·루틴을 이 자리에서 빼야 한다.
  */
 const ITEMS = [
-  { href: "/", icon: "📅", label: "달력" },
+  { href: "/", icon: "📅", label: "Calendar" },
   { href: "/places", icon: "📍", label: "Places" },
   { href: "/lists", icon: "☑", label: "List" },
   { href: "/dday", icon: "💜", label: "D-day" },
