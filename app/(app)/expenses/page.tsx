@@ -7,7 +7,7 @@ import { Brand } from "@/app/brand";
 import { Live } from "@/app/(app)/live";
 import { ExpensesView } from "./expenses-view";
 
-export const metadata: Metadata = { title: "쓴 돈 · JUNBI" };
+export const metadata: Metadata = { title: "our Pay · JUNBI" };
 
 export default async function ExpensesPage() {
   const ctx = await getContext();
@@ -46,7 +46,7 @@ export default async function ExpensesPage() {
         <span className="md:hidden">
           <Brand />
         </span>
-        <h1 className="font-display text-lg">쓴 돈</h1>
+        <h1 className="font-display text-lg">our Pay</h1>
       </div>
 
       <ExpensesView

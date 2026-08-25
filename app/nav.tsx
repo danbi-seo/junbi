@@ -32,7 +32,7 @@ const ITEMS = [
   { href: "/", icon: "📅", label: "Calendar" },
   { href: "/places", icon: "📍", label: "Places" },
   { href: "/lists", icon: "☑", label: "List" },
-  { href: "/expenses", icon: "💸", label: "쓴 돈" },
+  { href: "/expenses", icon: "💸", label: "our Pay" },
   { href: "/settings", icon: "⚙", label: "설정" },
 ];
 

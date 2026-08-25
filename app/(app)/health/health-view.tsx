@@ -454,11 +454,19 @@ function CycleCard({
         })}
       </div>
 
-      {/* 범례 바로 아래 상시 노출. 상세 화면에만 넣으면 안 본다. */}
-      <div className="mt-4 flex flex-wrap gap-3 text-xs text-ash">
-        <Legend mark="recorded" text={CYCLE_COPY.recorded} />
-        <Legend mark="predicted" text={CYCLE_COPY.predicted} />
-        <Legend mark="fertile" text={CYCLE_COPY.fertile} />
+      {/* 달력에 뜨는 건 두 가지다. 생리 주기 안에서만 기록과 예상을 나눈다 —
+          추정치가 확정된 기록처럼 보이면 과신한다.
+          범례는 바로 아래 상시 노출. 상세 화면에만 넣으면 안 본다. */}
+      <div className="mt-4 flex flex-col gap-2 text-xs text-ash">
+        <div className="flex items-center gap-3">
+          <span className="w-24 shrink-0">{CYCLE_COPY.cycle}</span>
+          <Legend mark="recorded" text={CYCLE_COPY.recorded} />
+          <Legend mark="predicted" text={CYCLE_COPY.predicted} />
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="w-24 shrink-0">{CYCLE_COPY.fertile}</span>
+          <Legend mark="fertile" text="" />
+        </div>
       </div>
       <p className="mt-2 text-xs leading-5 text-ash">{CYCLE_COPY.disclaimer}</p>
 
