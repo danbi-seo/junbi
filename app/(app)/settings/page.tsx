@@ -9,6 +9,7 @@ import { IcsCard } from "./ics-card";
 import { ReminderCard } from "./reminder-card";
 import { SetupCard } from "./setup-card";
 import { PushCard } from "./push-card";
+import { NotificationCard, type Prefs } from "./notification-card";
 
 export const metadata: Metadata = { title: "설정 · JUNBI" };
 
@@ -29,11 +30,12 @@ export default async function SettingsPage() {
     .limit(1)
     .maybeSingle<{ endpoint: string }>();
 
+  // 스위치 16개가 전부 여기 있다. 판정은 DB가 하고 화면은 값만 보여준다.
   const { data: prefs } = await supabase
     .from("notification_prefs")
-    .select("recv_event_upcoming,upcoming_min")
+    .select("*")
     .eq("user_id", ctx.userId)
-    .maybeSingle<{ recv_event_upcoming: boolean; upcoming_min: number }>();
+    .maybeSingle<Prefs & { recv_event_upcoming: boolean; upcoming_min: number }>();
 
   // .ics 주소는 캘린더 앱에 영구 저장된다. 배포 주소를 그대로 써야 한다.
   const h = await headers();
@@ -62,6 +64,8 @@ export default async function SettingsPage() {
       <ReminderCard
         initial={prefs?.recv_event_upcoming === false ? 0 : (prefs?.upcoming_min ?? 60)}
       />
+
+      {prefs && <NotificationCard initial={prefs} partnerLabel={ctx.label} />}
 
       <Link
         href="/health"

@@ -195,6 +195,39 @@ try {
     leaked.length === 0,
     JSON.stringify(leaked),
   );
+
+  // ── 설정 화면이 실제로 쓸 수 있는가 ──────────────────────────
+  //
+  // 스위치가 DB에만 있고 화면에서 못 바꾸면 통제가 반쪽이다.
+  // 화면은 서버 액션을 거치지만, 그 밑의 RLS가 막혀 있으면 아무것도 안 된다.
+  let res = await as(a, `notification_prefs?user_id=eq.${a.id}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ recv_expense_added: false, quiet_from: "22:00" }),
+  });
+  let row = await res.json();
+  check(
+    "내 알림 설정을 내가 고칠 수 있다",
+    "스위치가 DB에만 있고 못 바꾸면 설정 화면이 무의미하다",
+    res.ok && row[0]?.recv_expense_added === false && row[0]?.quiet_from?.startsWith("22:00"),
+    `${res.status} ${JSON.stringify(row).slice(0, 150)}`,
+  );
+
+  res = await as(a, `notification_prefs?user_id=eq.${b.id}`, {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ send_expense_added: false }),
+  });
+  row = await res.json().catch(() => []);
+  check(
+    "상대의 알림 설정은 못 고친다",
+    "발신 설정을 상대가 만질 수 있으면 끄는 통제 자체가 무너진다",
+    !Array.isArray(row) || row.length === 0,
+    `${res.status} ${JSON.stringify(row).slice(0, 150)}`,
+  );
+
+  // 되돌려 놓는다. 아래 finally가 before로 다시 덮지만 명시해 둔다.
+  await setPrefs(a.id, { recv_expense_added: true });
 } finally {
   // 원래 설정으로 되돌린다
   for (const p of before) {
