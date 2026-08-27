@@ -15,6 +15,7 @@ export type Profile = {
   emoji_key: string;
   member_slot: "a" | "b" | null;
   couple_id: string | null;
+  previous_couple_id?: string | null;
   timezone: string;
 };
 

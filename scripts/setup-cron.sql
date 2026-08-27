@@ -7,7 +7,7 @@
 -- │ 3. 이 파일 전체를 붙여넣는다                                │
 -- │ 4. 아래 '여기 한 줄'의 CRON_SECRET을 .env.local 값으로 채운다│
 -- │ 5. Run                                                      │
--- │ 6. 맨 아래 확인 쿼리에 job 3개가 보이면 끝                  │
+-- │ 6. 맨 아래 확인 쿼리에 job 4개가 보이면 끝                  │
 -- └────────────────────────────────────────────────────────────┘
 --
 -- 여러 번 실행해도 안전하다. 기존 job과 비밀값을 덮어쓴다.
@@ -86,8 +86,19 @@ select cron.schedule('daily-cleanup', '10 19 * * *', $job$
   select public.expire_proposals();
 $job$);
 
+-- ── 4. 해제된 커플 파기 (새벽 4시 20분) ───────────────────────
+--
+-- 30일 유예가 끝난 것만 지운다. couples를 지우면 FK cascade로
+-- 일정·장소·지출·체크리스트가 따라간다.
+-- 로그는 건수만 — "누가 언제 헤어졌다"를 들고 있을 이유가 없다.
+select cron.unschedule('purge-dissolved')
+ where exists (select 1 from cron.job where jobname = 'purge-dissolved');
+
+select cron.schedule('purge-dissolved', '20 19 * * *',
+  $job$ select public.purge_dissolved_couples(); $job$);
+
 -- ── 확인 ──────────────────────────────────────────────────────
--- job 3개가 active = true 로 보이면 성공이다.
+-- job 4개가 active = true 로 보이면 성공이다.
 select jobid, jobname, schedule, active from cron.job order by jobid;
 
 -- 비밀값이 제대로 들어갔는지 (값 자체는 찍지 않는다)

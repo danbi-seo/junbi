@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { partnerLabel, type Profile } from "@/lib/naming";
 
 const PROFILE_COLUMNS =
-  "id,name,display_name,pet_name_for_partner,emoji_key,member_slot,couple_id,timezone";
+  "id,name,display_name,pet_name_for_partner,emoji_key,member_slot,couple_id,previous_couple_id,timezone";
 
 export type Context = {
   userId: string;

@@ -10,6 +10,7 @@ import { ReminderCard } from "./reminder-card";
 import { SetupCard } from "./setup-card";
 import { PushCard } from "./push-card";
 import { NotificationCard, type Prefs } from "./notification-card";
+import { AccountCard } from "./account-card";
 
 export const metadata: Metadata = { title: "설정 · JUNBI" };
 
@@ -36,6 +37,33 @@ export default async function SettingsPage() {
     .select("*")
     .eq("user_id", ctx.userId)
     .maybeSingle<Prefs & { recv_event_upcoming: boolean; upcoming_min: number }>();
+
+  // 해제 뒤 유예 기간 중인지. previous_couple_id가 남아 있으면 그렇다.
+  const { data: prev } = ctx.me.previous_couple_id
+    ? await supabase
+        .from("couples")
+        .select("purge_after,status")
+        .eq("id", ctx.me.previous_couple_id)
+        .maybeSingle<{ purge_after: string | null; status: string }>()
+    : { data: null };
+
+  const { data: req } = ctx.me.previous_couple_id
+    ? await supabase
+        .from("restore_requests")
+        .select("asked_by")
+        .eq("couple_id", ctx.me.previous_couple_id)
+        .maybeSingle<{ asked_by: string }>()
+    : { data: null };
+
+  const restore =
+    prev?.status === "dissolved" &&
+    prev.purge_after &&
+    new Date(prev.purge_after) > new Date()
+      ? {
+          purgeAfter: prev.purge_after,
+          askedByMe: req ? req.asked_by === ctx.userId : null,
+        }
+      : null;
 
   // .ics 주소는 캘린더 앱에 영구 저장된다. 배포 주소를 그대로 써야 한다.
   const h = await headers();
@@ -97,10 +125,13 @@ export default async function SettingsPage() {
             </dd>
           </div>
         </dl>
-        <p className="mt-3 text-xs leading-5 text-ash">
-          애칭 바꾸기와 연결 해제는 7단계에서 붙습니다.
-        </p>
       </section>
+
+      <AccountCard
+        paired={Boolean(ctx.partner)}
+        partnerLabel={ctx.label}
+        restore={restore}
+      />
     </main>
   );
 }
