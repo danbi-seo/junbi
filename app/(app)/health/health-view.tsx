@@ -81,7 +81,7 @@ export function HealthView({
           onAck={(id) => run(() => ackOngoing(id))}
           onDelete={(id) => run(() => deletePeriod(id))}
         />
-      ) : (
+      ) : h.cycleTakenByPartner ? null : (
         <section className="rounded-xl border border-line bg-card p-5">
           <h2 className="font-display text-lg">생리 주기를 기록할까요?</h2>
           <p className="mt-2 text-sm leading-6 text-ash">

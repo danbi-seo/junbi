@@ -40,6 +40,12 @@ export type MyHealth = {
   cycleModuleOn?: boolean;
   /** 끝을 안 누른 기록을 며칠로 볼지. 본인 기록의 중앙값, 없으면 5. */
   periodDuration?: number;
+  /**
+   * 짝이 이미 주기 모듈을 쓰고 있다. 커플에서 한 사람만 켤 수 있다.
+   * 이때 화면은 주기 카드를 **아예 그리지 않는다** — 안내문도 없다.
+   * "이미 한 사람이 쓰고 있어요"라고 적으면 그게 곧 상대에 대한 고지가 된다.
+   */
+  cycleTakenByPartner?: boolean;
   shareCycle?: boolean;
   shareCondition?: boolean;
   avoidInFreeSlots?: boolean;

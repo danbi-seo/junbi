@@ -484,6 +484,53 @@ try {
   await seedCycles(a.id, [28, 29, 28]);
   await setSharing(a.id, { share_cycle: true });
 
+  // ── 5-3. 주기 모듈은 커플에서 한 사람만 ──────────────────────
+  //
+  // 성별 컬럼을 두지 않으므로 '안 쓰는 쪽'을 앱이 아는 방법은 이것뿐이다.
+  // 이게 뚫리면 안 쓰는 쪽 화면에 주기 달력이 뜨고 기록도 들어간다.
+  //
+  // ⚠ 여기서 막히는 쪽은 반드시 A여야 한다.
+  //   set_health_sharing(p_module => false)는 '끄면 즉시 파기'를 탄다.
+  //   B로 부르면 실사용자의 생리 기록이 지워진다 — 실제로 한 번 지웠다.
+  //   B의 스위치는 admin PATCH로만 건드린다. 그건 파기 경로가 없다.
+  await setSharing(a.id, { cycle_module_on: false });
+  await setSharing(b.id, { cycle_module_on: true });
+
+  x = await rpc(a, "set_health_sharing", { p_module: true });
+  check(
+    "짝이 이미 쓰고 있으면 모듈을 켤 수 없다",
+    "양쪽 다 켜지면 안 쓰는 쪽 화면에 주기 달력이 뜨고 거기에 기록이 들어간다",
+    x.status >= 400 && JSON.stringify(x.body).includes("MODULE_TAKEN"),
+    `status ${x.status} ${JSON.stringify(x.body).slice(0, 120)}`,
+  );
+
+  x = await rpc(a, "log_period_start", {});
+  check(
+    "모듈이 꺼진 쪽은 생리 기록을 넣을 수 없다",
+    "화면을 감추는 것만으로는 막은 게 아니다. 서버가 거부해야 한다",
+    x.status >= 400 && JSON.stringify(x.body).includes("MODULE_OFF"),
+    `status ${x.status} ${JSON.stringify(x.body).slice(0, 120)}`,
+  );
+
+  x = await rpc(a, "my_health");
+  check(
+    "막힌 쪽은 '켤 수 있음'으로 안 보인다",
+    "화면이 이 값으로 카드를 아예 안 그린다. 안내문을 띄우면 그게 상대에 대한 고지가 된다",
+    x.body?.cycleTakenByPartner === true && !x.body?.cycleModuleOn,
+    JSON.stringify(x.body),
+  );
+
+  // 상대가 끄면 다시 켤 수 있어야 한다. 영구 선점이면 갈아탈 수 없다.
+  await setSharing(b.id, { cycle_module_on: false });
+  x = await rpc(a, "set_health_sharing", { p_module: true });
+  check(
+    "상대가 끄면 그때는 켤 수 있다",
+    "한 번 정하면 못 바꾸는 규칙이면 잘못 켠 사람이 갇힌다",
+    x.status < 400,
+    `status ${x.status} ${JSON.stringify(x.body).slice(0, 120)}`,
+  );
+  await setSharing(b.id, { cycle_module_on: true });
+
   // ── 6. 끄면 파기 ─────────────────────────────────────────────
   let before = await (await admin(`cycles?select=id&user_id=eq.${a.id}`)).json();
   await rpc(a, "set_health_sharing", { p_module: false });

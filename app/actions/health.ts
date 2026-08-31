@@ -32,7 +32,15 @@ export async function setHealthSharing(patch: {
     p_consent: patch.consent ?? null,
   });
 
-  if (error) return fail();
+  if (error) {
+    // 커플에서 한 사람만 켤 수 있다. 화면이 카드를 안 그리므로 여기까지
+    // 오는 건 드문데, 두 사람이 동시에 켜면 뒤늦은 쪽이 걸린다.
+    return fail(
+      error.message.includes("MODULE_TAKEN")
+        ? "지금은 켤 수 없어요"
+        : "저장하지 못했어요",
+    );
+  }
   revalidatePath("/health");
   revalidatePath("/settings");
   revalidatePath("/");
