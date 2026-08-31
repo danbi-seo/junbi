@@ -629,7 +629,21 @@ try {
   }
   await admin("notification_queue?id=not.is.null", { method: "DELETE" });
   await admin("expenses?memo=like.검증-건강*", { method: "DELETE" });
-  for (const s of beforeSharing) {
+  // A는 검증 전용 계정이다. 스냅샷으로 되돌리지 않고 **무조건 끈다.**
+  //
+  // 스냅샷 복원은 한 번 켜진 채로 비정상 종료되면 그 상태가 기준이 되어
+  // 그 뒤로 영원히 켜진 채 남는다. 실제로 그렇게 됐다.
+  // 검증 계정의 기본값은 '전부 꺼짐'이고, 그건 스냅샷이 아니라 상수다.
+  await setSharing(a.id, {
+    cycle_module_on: false,
+    share_cycle: false,
+    share_condition: false,
+    avoid_in_free_slots: false,
+    consented_at: null,
+  });
+
+  // B는 실사용 계정이라 원래 값으로 되돌린다.
+  for (const s of beforeSharing.filter((x) => x.user_id === b.id)) {
     await setSharing(s.user_id, {
       cycle_module_on: s.cycle_module_on,
       share_cycle: s.share_cycle,
