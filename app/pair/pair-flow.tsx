@@ -37,13 +37,20 @@ export function PairFlow({
   hasProfile,
   pending,
   initialCode,
+  inviteCode,
+  origin,
 }: {
   hasProfile: boolean;
   pending: PendingState;
   initialCode: string | null;
+  /** 살아 있는 내 초대 코드. 서버에서 읽어 온다. */
+  inviteCode: string | null;
+  /** 초대 링크에 쓸 주소. 서버가 준다. */
+  origin: string;
 }) {
   if (!hasProfile) return <ProfileStep initialCode={initialCode} />;
-  if (pending) return <PendingStep state={pending} />;
+  if (pending)
+    return <PendingStep state={pending} inviteCode={inviteCode} origin={origin} />;
   return <InviteStep initialCode={initialCode} />;
 }
 
@@ -130,14 +137,12 @@ function ProfileStep({ initialCode }: { initialCode: string | null }) {
 function InviteStep({ initialCode }: { initialCode: string | null }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [mode, setMode] = useState<"pick" | "invite" | "enter">(
+  const [mode, setMode] = useState<"pick" | "enter">(
     initialCode ? "enter" : "pick",
   );
   const [code, setCode] = useState(initialCode ?? "");
-  const [issued, setIssued] = useState<string | null>(null);
   const [preview, setPreview] = useState<InvitePreview | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   // 링크로 들어왔으면 바로 상대를 보여준다. 코드를 손으로 칠 일이 없다.
   useEffect(() => {
@@ -191,8 +196,9 @@ function InviteStep({ initialCode }: { initialCode: string | null }) {
               setError(null);
               const res = await createInvite();
               if (!res.ok) return setError(res.message);
-              setIssued(res.data!.code);
-              setMode("invite");
+              // 코드는 서버가 다시 그리면서 대기 화면에 실어 준다.
+              // 클라이언트에 들고 있으면 새로고침 한 번에 사라진다.
+              router.refresh();
             })
           }
           className={primary}
@@ -213,82 +219,6 @@ function InviteStep({ initialCode }: { initialCode: string | null }) {
     );
   }
 
-  if (mode === "invite" && issued) {
-    const link = `${window.location.origin}/j/${issued}`;
-    return (
-      <div className="flex flex-col gap-4">
-        <h1 className="font-display text-xl">초대를 보내세요</h1>
-
-        <div className="rounded-xl border border-line bg-card p-5 text-center">
-          <p className="font-display text-3xl tracking-[0.3em]">{issued}</p>
-          <p className="mt-2 text-xs text-ash">24시간 동안 쓸 수 있어요</p>
-        </div>
-
-        {/*
-         * 공유 시트가 있으면 그쪽을 먼저 쓴다. 폰에서는 카카오톡이 목록에
-         * 바로 뜨므로 '복사 → 카톡 열기 → 붙여넣기' 세 단계가 한 번이 된다.
-         *
-         * 없으면(PC 브라우저 등) 복사로 떨어진다. 그때는 **눌렸는지 보여줘야**
-         * 한다. 아무 반응이 없으면 계속 누르게 된다.
-         */}
-        <button
-          type="button"
-          onClick={async () => {
-            setCopied(false);
-            const text = `JUNBI에서 같이 써요\n${link}`;
-            // 렌더 중이 아니라 여기서 본다. 서버에는 navigator가 없다.
-            const nav = navigator as Navigator & {
-              share?: (d: ShareData) => Promise<void>;
-            };
-            if (nav.share) {
-              try {
-                await nav.share({ title: "JUNBI 초대", text, url: link });
-                return;
-              } catch {
-                // 사용자가 공유 시트를 닫은 경우. 복사로 떨어지지 않는다.
-                return;
-              }
-            }
-            try {
-              await navigator.clipboard.writeText(link);
-              setCopied(true);
-            } catch {
-              setError("복사하지 못했어요. 아래 주소를 직접 복사해 주세요.");
-            }
-          }}
-          className={primary}
-        >
-          {copied ? "복사했어요" : "링크 보내기"}
-        </button>
-
-        {copied && (
-          <p className="text-sm text-ok">
-            복사했어요. 카카오톡에 붙여넣어 보내세요.
-          </p>
-        )}
-
-        {/* 링크가 안 열리거나 PC로 받은 경우를 위해 코드를 불러줄 수 있게 둔다 */}
-        <p className="text-xs break-all text-ash">{link}</p>
-
-        <p className="text-sm leading-6 text-ash">
-          상대가 링크를 열고 확인하면, 마지막에 <b>내가 한 번 더</b> 확정해요.
-          링크가 다른 사람에게 가더라도 연결되지 않아요.
-        </p>
-
-        <button
-          type="button"
-          onClick={() => {
-            setIssued(null);
-            setMode("pick");
-            router.refresh();
-          }}
-          className="text-sm text-ash underline underline-offset-4"
-        >
-          돌아가기
-        </button>
-      </div>
-    );
-  }
 
   return (
     <form
@@ -339,7 +269,15 @@ function InviteStep({ initialCode }: { initialCode: string | null }) {
 }
 
 /* ── 3. 확정 대기 · 확정 ────────────────────────────────────── */
-function PendingStep({ state }: { state: NonNullable<PendingState> }) {
+function PendingStep({
+  state,
+  inviteCode,
+  origin,
+}: {
+  state: NonNullable<PendingState>;
+  inviteCode: string | null;
+  origin: string;
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -352,19 +290,36 @@ function PendingStep({ state }: { state: NonNullable<PendingState> }) {
     });
 
   // 초대한 쪽인데 상대가 아직 안 왔다
+  // 초대한 쪽인데 상대가 아직 안 왔다.
+  //
+  // 여기서 코드를 계속 보여준다. 예전에는 코드 화면과 이 화면이 따로였는데,
+  // 초대를 만들면 서버가 다시 그리면서 이 화면으로 갈아치워져 코드가
+  // 1초 만에 사라졌다. 새로고침해도 마찬가지였다.
+  // 두 화면을 합치면 코드가 어디서 그려지든 남아 있다.
   if (state.waiting) {
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="font-display text-xl">기다리는 중</h1>
+        <h1 className="font-display text-xl">초대를 보내세요</h1>
+
+        {inviteCode ? (
+          <ShareInvite code={inviteCode} origin={origin} />
+        ) : (
+          <p className="text-sm text-ash">
+            코드가 만료됐어요. 취소하고 다시 만들어 주세요.
+          </p>
+        )}
+
         <p className="text-sm leading-6 text-ash">
-          상대가 링크를 열고 확인하면 여기서 알려드려요.
+          상대가 링크를 열고 확인하면, 마지막에 <b>내가 한 번 더</b> 확정해요.
+          링크가 다른 사람에게 가더라도 연결되지 않아요.
         </p>
+
         <button
           type="button"
           onClick={() => router.refresh()}
           className={primary}
         >
-          새로고침
+          확인했는지 보기
         </button>
         <button
           type="button"
@@ -511,5 +466,74 @@ function ConfirmPerson({
         </button>
       </div>
     </div>
+  );
+}
+
+/* ── 초대 코드 · 보내기 ─────────────────────────────────────────
+ *
+ * 코드를 클라이언트 상태에 들고 있지 않는다. 서버가 매번 실어 준다.
+ * 그래야 새로고침하거나 화면이 다시 그려져도 코드가 남는다.
+ */
+function ShareInvite({ code, origin }: { code: string; origin: string }) {
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const link = `${origin}/j/${code}`;
+
+  return (
+    <>
+      <div className="rounded-xl border border-line bg-card p-5 text-center">
+        <p className="font-display text-3xl tracking-[0.3em]">{code}</p>
+        <p className="mt-2 text-xs text-ash">24시간 동안 쓸 수 있어요</p>
+      </div>
+
+      {/*
+       * 공유 시트가 있으면 그쪽을 먼저 쓴다. 폰에서는 카카오톡이 목록에
+       * 바로 떠서 '복사 → 카톡 열기 → 붙여넣기'가 한 번이 된다.
+       *
+       * 없으면(PC 등) 복사로 떨어진다. 그때는 눌렸는지 보여줘야 한다 —
+       * 아무 반응이 없으면 계속 누르게 된다.
+       */}
+      <button
+        type="button"
+        onClick={async () => {
+          setCopied(false);
+          setError(null);
+          const nav = navigator as Navigator & {
+            share?: (d: ShareData) => Promise<void>;
+          };
+          if (nav.share) {
+            try {
+              await nav.share({
+                title: "JUNBI 초대",
+                text: `JUNBI에서 같이 써요\n${link}`,
+                url: link,
+              });
+            } catch {
+              // 공유 시트를 닫은 경우. 복사로 떨어지지 않는다.
+            }
+            return;
+          }
+          try {
+            await navigator.clipboard.writeText(link);
+            setCopied(true);
+          } catch {
+            setError("복사하지 못했어요. 아래 주소를 직접 복사해 주세요.");
+          }
+        }}
+        className={primary}
+      >
+        {copied ? "복사했어요" : "링크 보내기"}
+      </button>
+
+      {copied && (
+        <p className="text-sm text-ok">
+          복사했어요. 카카오톡에 붙여넣어 보내세요.
+        </p>
+      )}
+      {error && <p className="text-sm text-danger">{error}</p>}
+
+      {/* 링크가 안 열리거나 PC로 받은 경우를 위해 주소도 보여준다 */}
+      <p className="text-xs break-all text-ash">{link}</p>
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
 import { pendingPartner } from "@/app/actions/pairing";
@@ -40,6 +41,21 @@ export default async function PairPage(props: PageProps<"/pair">) {
     if (couple?.status === "active") redirect("/");
   }
 
+  // 살아 있는 내 초대 코드. 화면이 새로 그려져도 코드가 사라지면 안 된다.
+  const { data: invite } = await supabase
+    .from("invites")
+    .select("code")
+    .eq("created_by", user.id)
+    .is("used_at", null)
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle<{ code: string }>();
+
+  // 초대 링크에 쓸 주소. window.origin을 클라이언트에서 읽으면
+  // 서버 렌더와 어긋난다. 설정 화면의 .ics 주소와 같은 방식으로 만든다.
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const origin = `${host.startsWith("localhost") ? "http" : "https"}://${host}`;
+
   const sp = await props.searchParams;
   const code = typeof sp.code === "string" ? sp.code.toUpperCase() : null;
 
@@ -50,6 +66,8 @@ export default async function PairPage(props: PageProps<"/pair">) {
         hasProfile={Boolean(me)}
         pending={await pendingPartner()}
         initialCode={code}
+        inviteCode={invite?.code ?? null}
+        origin={origin}
       />
     </main>
   );
