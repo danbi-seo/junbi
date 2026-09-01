@@ -9,6 +9,7 @@ type KakaoDoc = {
   address_name: string;
   road_address_name: string;
   category_group_name: string;
+  category_group_code: string;
   place_url: string;
   x: string; // 경도
   y: string; // 위도
@@ -18,6 +19,8 @@ export type PlaceHit = {
   name: string;
   address: string;
   category: string;
+  /** 카카오 갈래 코드. 화면이 우리 갈래로 옮길 때 쓴다. */
+  categoryCode: string;
   url: string;
   lat: number;
   lng: number;
@@ -76,6 +79,7 @@ export async function GET(request: Request) {
     // 도로명이 있으면 그쪽이 읽기 쉽다
     address: d.road_address_name || d.address_name,
     category: d.category_group_name,
+    categoryCode: d.category_group_code,
     url: d.place_url,
     // x가 경도, y가 위도다. 순서를 뒤집으면 지도에서 바다로 간다.
     lat: Number(d.y),

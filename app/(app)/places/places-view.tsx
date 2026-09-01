@@ -14,6 +14,7 @@ import {
   CATEGORY,
   CATEGORIES,
   parseMapLink,
+  categoryFromKakao,
   directionsUrl,
   stars,
   type Place,
@@ -284,6 +285,7 @@ function AddForm({ onDone }: { onDone: () => void }) {
   const [coord, setCoord] = useState<{ lat?: number; lng?: number }>({});
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
+  const [category, setCategory] = useState<PlaceCategory>("restaurant");
   const [error, setError] = useState<string | null>(null);
 
   // 이름으로 찾기 — 카카오 로컬 API
@@ -323,6 +325,9 @@ function AddForm({ onDone }: { onDone: () => void }) {
   function pick(h: PlaceHit) {
     setName(h.name);
     setAddress(h.address);
+    // 갈래를 짚어주면 한 번 덜 누른다. 틀리면 바꾸면 된다.
+    const guess = categoryFromKakao(h.categoryCode);
+    if (guess) setCategory(guess);
     setCoord({ lat: h.lat, lng: h.lng });
     setLink(h.url);
     setHits(null);
@@ -454,7 +459,8 @@ function AddForm({ onDone }: { onDone: () => void }) {
 
       <select
         name="category"
-        defaultValue="restaurant"
+        value={category}
+        onChange={(e) => setCategory(e.target.value as PlaceCategory)}
         className="rounded-lg border border-line bg-paper px-3 py-2"
       >
         {CATEGORIES.map((c) => (
