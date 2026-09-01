@@ -137,6 +137,7 @@ function InviteStep({ initialCode }: { initialCode: string | null }) {
   const [issued, setIssued] = useState<string | null>(null);
   const [preview, setPreview] = useState<InvitePreview | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // 링크로 들어왔으면 바로 상대를 보여준다. 코드를 손으로 칠 일이 없다.
   useEffect(() => {
@@ -223,13 +224,50 @@ function InviteStep({ initialCode }: { initialCode: string | null }) {
           <p className="mt-2 text-xs text-ash">24시간 동안 쓸 수 있어요</p>
         </div>
 
+        {/*
+         * 공유 시트가 있으면 그쪽을 먼저 쓴다. 폰에서는 카카오톡이 목록에
+         * 바로 뜨므로 '복사 → 카톡 열기 → 붙여넣기' 세 단계가 한 번이 된다.
+         *
+         * 없으면(PC 브라우저 등) 복사로 떨어진다. 그때는 **눌렸는지 보여줘야**
+         * 한다. 아무 반응이 없으면 계속 누르게 된다.
+         */}
         <button
           type="button"
-          onClick={() => navigator.clipboard?.writeText(link)}
+          onClick={async () => {
+            setCopied(false);
+            const text = `JUNBI에서 같이 써요\n${link}`;
+            // 렌더 중이 아니라 여기서 본다. 서버에는 navigator가 없다.
+            const nav = navigator as Navigator & {
+              share?: (d: ShareData) => Promise<void>;
+            };
+            if (nav.share) {
+              try {
+                await nav.share({ title: "JUNBI 초대", text, url: link });
+                return;
+              } catch {
+                // 사용자가 공유 시트를 닫은 경우. 복사로 떨어지지 않는다.
+                return;
+              }
+            }
+            try {
+              await navigator.clipboard.writeText(link);
+              setCopied(true);
+            } catch {
+              setError("복사하지 못했어요. 아래 주소를 직접 복사해 주세요.");
+            }
+          }}
           className={primary}
         >
-          링크 복사하기
+          {copied ? "복사했어요" : "링크 보내기"}
         </button>
+
+        {copied && (
+          <p className="text-sm text-ok">
+            복사했어요. 카카오톡에 붙여넣어 보내세요.
+          </p>
+        )}
+
+        {/* 링크가 안 열리거나 PC로 받은 경우를 위해 코드를 불러줄 수 있게 둔다 */}
         <p className="text-xs break-all text-ash">{link}</p>
 
         <p className="text-sm leading-6 text-ash">
