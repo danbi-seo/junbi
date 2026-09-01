@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import type { PlaceHit } from "@/app/api/places/search/route";
 import {
   addPlace,
   deletePlace,
@@ -282,7 +283,51 @@ function AddForm({ onDone }: { onDone: () => void }) {
   const [link, setLink] = useState("");
   const [coord, setCoord] = useState<{ lat?: number; lng?: number }>({});
   const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  // 이름으로 찾기 — 카카오 로컬 API
+  const [q, setQ] = useState("");
+  const [hits, setHits] = useState<PlaceHit[] | null>(null);
+  const [searching, setSearching] = useState(false);
+
+  async function search() {
+    const term = q.trim();
+    if (!term) return;
+    setSearching(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/places/search?q=${encodeURIComponent(term)}`,
+      );
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        setError(
+          b.error === "missing_env"
+            ? "장소 검색 키가 설정되지 않았어요."
+            : "지금은 검색이 안 돼요. 이름을 직접 입력해 주세요.",
+        );
+        setHits([]);
+        return;
+      }
+      setHits((await res.json()).hits);
+    } catch {
+      setError("지금은 검색이 안 돼요. 이름을 직접 입력해 주세요.");
+      setHits([]);
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  /** 고르면 이름·주소·좌표가 한 번에 채워진다. 그게 이 기능의 전부다. */
+  function pick(h: PlaceHit) {
+    setName(h.name);
+    setAddress(h.address);
+    setCoord({ lat: h.lat, lng: h.lng });
+    setLink(h.url);
+    setHits(null);
+    setQ("");
+  }
 
   function onLink(value: string) {
     setLink(value);
@@ -313,7 +358,67 @@ function AddForm({ onDone }: { onDone: () => void }) {
       }}
       className="flex flex-col gap-4 rounded-xl border border-line bg-card p-5"
     >
-      {/* 링크 붙여넣기가 주 입력이다. 한국에서 맛집 정보는 링크로 오간다. */}
+      {/*
+       * 이름으로 찾는 게 주 입력이다.
+       *
+       * 링크 붙여넣기를 먼저 만들었는데, 카카오맵 단축 링크(kko.to/...)에는
+       * 좌표가 안 들어 있어 대부분 "좌표를 못 찾았어요"로 끝났다.
+       * 이름을 넣으면 좌표까지 한 번에 채워진다.
+       */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-sm text-ash">이름으로 찾기</span>
+        <div className="flex gap-2">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => {
+              // 폼 안이라 엔터가 저장으로 새어 나간다
+              if (e.key === "Enter") {
+                e.preventDefault();
+                search();
+              }
+            }}
+            placeholder="어니언 성수"
+            className="w-full rounded-lg border border-line bg-paper px-3 py-2 outline-none focus:border-slot-a"
+          />
+          <button
+            type="button"
+            onClick={search}
+            disabled={searching || !q.trim()}
+            className="shrink-0 rounded-lg border border-line px-3 py-2 text-sm disabled:opacity-40"
+          >
+            {searching ? "찾는 중…" : "찾기"}
+          </button>
+        </div>
+      </div>
+
+      {hits?.length === 0 && (
+        <p className="text-xs text-ash">
+          결과가 없어요. 이름을 직접 입력해도 돼요.
+        </p>
+      )}
+
+      {hits && hits.length > 0 && (
+        <ul className="flex flex-col gap-1 rounded-lg border border-line bg-paper p-2">
+          {hits.map((h) => (
+            <li key={h.url}>
+              <button
+                type="button"
+                onClick={() => pick(h)}
+                className="w-full rounded-lg px-2 py-2 text-left hover:bg-card"
+              >
+                <span className="block truncate text-sm">{h.name}</span>
+                <span className="block truncate text-xs text-ash">
+                  {h.category ? `${h.category} · ` : ""}
+                  {h.address}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* 링크 붙여넣기도 남긴다. 좌표가 들어 있는 링크면 그게 더 빠르다. */}
       <label className="flex flex-col gap-1.5">
         <span className="text-sm text-ash">지도 링크 붙여넣기 (선택)</span>
         <input
@@ -361,6 +466,8 @@ function AddForm({ onDone }: { onDone: () => void }) {
 
       <input
         name="address"
+        value={address}
+        onChange={(e) => setAddress(e.target.value)}
         placeholder="주소 (선택)"
         className="rounded-lg border border-line bg-paper px-3 py-2 outline-none focus:border-slot-a"
       />
