@@ -4,22 +4,34 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-type Step = "email" | "code" | "password";
+type Step = "start" | "password";
 
 /**
- * 이메일로 6자리 코드를 받아 로그인한다.
+ * 로그인 — docs/08-auth-pairing.md 1
  *
- * 카카오 로그인은 7단계다. 0~6단계는 이 경로로 개발한다.
- * 카카오가 붙은 뒤에도 이 경로는 남는다 — 카카오가 막히거나
- * PC에서 쓸 때의 보조 경로가 필요하다 → docs/08-auth-pairing.md
+ * 카카오는 **인증에만** 쓴다. 친구목록·메시지 보내기 같은 건 요청하지 않는다.
+ * 우리가 받는 건 "이 사람이 이 사람이 맞다"는 사실뿐이다.
+ *
+ * ── 이메일 코드(OTP)를 화면에서 뺀 이유 ────────────────────────
+ *
+ * Supabase 기본 메일은 시간당 2통이고 프로젝트 팀원 주소로만 나간다.
+ * 그대로 두면 눌러도 실패하는 죽은 버튼이 된다. 실패를 사용자 잘못처럼
+ * 보이게 하느니 없는 게 낫다 → docs/21-onboarding.md
+ *
+ * 커스텀 SMTP를 붙이면 되살린다. 코드는 git 이력에 있다.
+ *
+ * ── 비밀번호 경로가 남아 있는 이유 ─────────────────────────────
+ *
+ * 이제 이게 유일한 보조 경로다. 카카오 계정을 잃거나 카카오 로그인이
+ * 막히면 여기로 들어온다. 설정에서 미리 만들어 둘 수 있다.
+ * 메일을 한 통도 안 보내고 동작하는 게 핵심이다.
  */
 export function LoginForm() {
   const router = useRouter();
   const supabase = createClient();
 
-  const [step, setStep] = useState<Step>("email");
+  const [step, setStep] = useState<Step>("start");
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,14 +42,24 @@ export function LoginForm() {
     router.push("/");
   }
 
-  /**
-   * 비밀번호 경로 — 개발용 보조 경로.
-   *
-   * 무료 요금제의 기본 메일 발송은 시간당 2통이라 개발 중에 계속 막힌다.
-   * 계정을 대시보드에서 직접 만들고 이쪽으로 들어온다.
-   * 7단계에서 카카오 로그인이 붙으면 실사용자에게는 노출하지 않는다.
-   * → docs/decisions.md
-   */
+  async function signInWithKakao() {
+    setBusy(true);
+    setError(null);
+
+    // 카카오 → Supabase → 우리 /auth/callback 순서로 돌아온다.
+    // 그 라우트가 이미 code를 세션으로 바꾸고 있어 따로 만들 게 없다.
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "kakao",
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+
+    if (error) {
+      setBusy(false);
+      setError("카카오 로그인을 시작하지 못했어요. 잠시 뒤에 다시 시도해 주세요.");
+    }
+    // 성공하면 페이지가 카카오로 넘어간다. busy는 그대로 둔다.
+  }
+
   async function signInWithPassword(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -56,83 +78,28 @@ export function LoginForm() {
     done();
   }
 
-  async function sendCode(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      // 모르는 사람이 주소만 넣어 계정을 만들 수 없게 한다.
-      // 배포 주소는 누구나 열 수 있고, 계정이 생기면 메일 할당량도 소모된다.
-      // 실제 가입은 7단계에서 초대 링크를 통해서만 → docs/08-auth-pairing.md
-      options: { shouldCreateUser: false },
-    });
-
-    setBusy(false);
-    if (error) {
-      // 실패를 사용자 잘못처럼 쓰지 않는다 → docs/21-onboarding.md
-      setError(
-        error.status === 429
-          ? "메일을 너무 자주 보냈어요. 잠시 뒤에 다시 시도해 주세요."
-          : "코드를 보내지 못했어요. 주소를 확인하고 다시 시도해 주세요.",
-      );
-      return;
-    }
-    setStep("code");
-  }
-
-  async function verify(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-
-    const { error } = await supabase.auth.verifyOtp({
-      email: email.trim(),
-      token: code.trim(),
-      type: "email",
-    });
-
-    setBusy(false);
-    if (error) {
-      setError("코드가 맞지 않아요. 메일을 다시 확인해 주세요.");
-      return;
-    }
-    done();
-  }
-
   const field =
     "w-full rounded-lg border border-line bg-card px-4 py-3 text-ink " +
     "outline-none focus:border-slot-a focus:ring-2 focus:ring-slot-a/20";
-  const button =
-    "w-full rounded-lg bg-slot-a px-4 py-3 font-medium text-white " +
-    "disabled:opacity-40 disabled:cursor-not-allowed";
 
-  if (step === "email") {
+  if (step === "start") {
     return (
-      <form onSubmit={sendCode} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-2">
-          <span className="text-sm text-ash">이메일</span>
-          <input
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            className={field}
-          />
-        </label>
+      <div className="flex flex-col gap-4">
+        {/* 카카오 버튼은 브랜드 색을 그대로 쓴다. 우리 색으로 칠하면
+            "카카오가 맞나" 하는 의심이 생기고 그게 이탈로 이어진다. */}
+        <button
+          type="button"
+          onClick={signInWithKakao}
+          disabled={busy}
+          className="w-full rounded-lg bg-[#FEE500] px-4 py-3 font-medium text-[#191600] disabled:opacity-40"
+        >
+          {busy ? "카카오로 이동 중…" : "카카오로 시작하기"}
+        </button>
 
         {error && <p className="text-sm text-danger">{error}</p>}
 
-        <button type="submit" disabled={busy || !email} className={button}>
-          {busy ? "보내는 중…" : "코드 받기"}
-        </button>
-
         <p className="text-sm leading-6 text-ash">
-          비밀번호가 없어요. 메일로 6자리 코드를 보내드립니다.
+          로그인에만 써요. 친구 목록이나 메시지 보내기 권한은 받지 않아요.
         </p>
 
         <button
@@ -143,103 +110,66 @@ export function LoginForm() {
           }}
           className="text-sm text-ash underline underline-offset-4"
         >
-          비밀번호로 로그인 (개발용)
+          비밀번호로 로그인
         </button>
-      </form>
-    );
-  }
-
-  if (step === "password") {
-    return (
-      <form onSubmit={signInWithPassword} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-2">
-          <span className="text-sm text-ash">이메일</span>
-          <input
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            className={field}
-          />
-        </label>
-
-        <label className="flex flex-col gap-2">
-          <span className="text-sm text-ash">비밀번호</span>
-          <input
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={field}
-          />
-        </label>
-
-        {error && <p className="text-sm text-danger">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={busy || !email || !password}
-          className={button}
-        >
-          {busy ? "확인 중…" : "로그인"}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            setStep("email");
-            setPassword("");
-            setError(null);
-          }}
-          className="text-sm text-ash underline underline-offset-4"
-        >
-          코드로 로그인할게요
-        </button>
-      </form>
+      </div>
     );
   }
 
   return (
-    <form onSubmit={verify} className="flex flex-col gap-4">
-      <p className="text-sm leading-6 text-ash">
-        <span className="text-ink">{email}</span> 으로 코드를 보냈어요.
-      </p>
+    <form onSubmit={signInWithPassword} className="flex flex-col gap-4">
+      <label className="flex flex-col gap-2">
+        <span className="text-sm text-ash">이메일</span>
+        <input
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          className={field}
+        />
+      </label>
 
       <label className="flex flex-col gap-2">
-        <span className="text-sm text-ash">6자리 코드</span>
+        <span className="text-sm text-ash">비밀번호</span>
         <input
-          type="text"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          maxLength={6}
+          type="password"
+          autoComplete="current-password"
           required
-          value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-          placeholder="000000"
-          className={`${field} tnum text-center text-2xl tracking-[0.4em]`}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className={field}
         />
       </label>
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
-      <button type="submit" disabled={busy || code.length < 6} className={button}>
+      <button
+        type="submit"
+        disabled={busy || !email || !password}
+        className="w-full rounded-lg bg-slot-a px-4 py-3 font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
+      >
         {busy ? "확인 중…" : "로그인"}
       </button>
+
+      {/* 잊었을 때 스스로 되돌릴 방법이 없다. 미리 말해 둔다. */}
+      <p className="text-xs leading-5 text-ash">
+        설정에서 미리 만들어 둔 비상용 비밀번호예요. 잊으면 되돌릴 수 없으니
+        카카오로 들어와 다시 설정해 주세요.
+      </p>
 
       <button
         type="button"
         onClick={() => {
-          setStep("email");
-          setCode("");
+          setStep("start");
+          setPassword("");
           setError(null);
         }}
         className="text-sm text-ash underline underline-offset-4"
       >
-        주소를 다시 입력할게요
+        카카오로 로그인할게요
       </button>
     </form>
   );

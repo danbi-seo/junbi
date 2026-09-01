@@ -11,6 +11,7 @@ import { SetupCard } from "./setup-card";
 import { PushCard } from "./push-card";
 import { NotificationCard, type Prefs } from "./notification-card";
 import { AccountCard } from "./account-card";
+import { PasswordCard } from "./password-card";
 
 export const metadata: Metadata = { title: "설정 · JUNBI" };
 
@@ -110,7 +111,10 @@ export default async function SettingsPage() {
         <dl className="mt-3 flex flex-col gap-2 text-sm">
           <div className="flex justify-between">
             <dt className="text-ash">계정</dt>
-            <dd className="max-w-[14rem] truncate">{ctx.email}</dd>
+            {/* 카카오가 이메일을 안 줄 수 있다. 빈칸으로 두면 고장으로 읽힌다. */}
+            <dd className="max-w-[14rem] truncate">
+              {ctx.email ?? "카카오 계정"}
+            </dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-ash">나</dt>
@@ -126,6 +130,8 @@ export default async function SettingsPage() {
           </div>
         </dl>
       </section>
+
+      <PasswordCard email={ctx.email ?? null} />
 
       <AccountCard
         paired={Boolean(ctx.partner)}

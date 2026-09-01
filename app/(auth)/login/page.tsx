@@ -14,9 +14,9 @@ export default async function LoginPage(props: PageProps<"/login">) {
 
         {e === "link" && (
           <p className="mb-6 rounded-lg bg-slot-b-bg px-4 py-3 text-sm leading-6">
-            링크가 만료됐거나 이미 사용됐어요.
+            로그인이 완료되지 않았어요.
             <br />
-            아래에서 코드를 새로 받아 주세요.
+            아래에서 다시 시도해 주세요.
           </p>
         )}
 
