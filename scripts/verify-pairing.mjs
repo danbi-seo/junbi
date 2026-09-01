@@ -236,6 +236,31 @@ try {
     `status ${x.status} ${JSON.stringify(x.body).slice(0, 100)}`,
   );
 
+  // 확정 대기 중에도 상대 프로필은 보인다. 확인 화면에 필요하기 때문이다.
+  // 그런데 화면이 그걸 '연결됐다'로 읽으면 앱이 열리고, 조회는 0건이고
+  // 저장은 실패하는 상태가 된다. 실제로 그랬다 —
+  // getContext가 profiles만 보고 판단했다.
+  const seenProfile = await (
+    await as(b, `profiles?select=name&id=eq.${a.id}`)
+  ).json();
+  check(
+    "확정 대기 중에도 상대 프로필은 보인다 (확인 화면용)",
+    "이름과 생일이 안 보이면 이 사람이 맞는지 판단할 수 없다",
+    Array.isArray(seenProfile) && seenProfile.length === 1,
+    JSON.stringify(seenProfile),
+  );
+
+  {
+    const fs2 = await import("node:fs");
+    const src = fs2.readFileSync("lib/session.ts", "utf8");
+    check(
+      "화면은 couples.status를 보고 연결 여부를 판단한다",
+      "profiles.couple_id만 보면 확정 전에도 앱이 열린다. 겉보기엔 멀쩡한데 저장이 안 된다",
+      src.includes("couples") && src.includes("active"),
+      "",
+    );
+  }
+
   // ── 5. 확정 ──────────────────────────────────────────────────
   x = await rpc(a, "confirm_pair", { p_started_on: "2026-04-20" });
   check(
