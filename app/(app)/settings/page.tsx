@@ -12,6 +12,7 @@ import { PushCard } from "./push-card";
 import { NotificationCard, type Prefs } from "./notification-card";
 import { AccountCard } from "./account-card";
 import { PasswordCard } from "./password-card";
+import { ProfileCard } from "./profile-card";
 
 export const metadata: Metadata = { title: "설정 · JUNBI" };
 
@@ -38,6 +39,18 @@ export default async function SettingsPage() {
     .select("*")
     .eq("user_id", ctx.userId)
     .maybeSingle<Prefs & { recv_event_upcoming: boolean; upcoming_min: number }>();
+
+  const { data: myProfile } = await supabase
+    .from("profiles")
+    .select("name,birth_date,birth_is_lunar,emoji_key,pet_name_for_partner")
+    .eq("id", ctx.userId)
+    .maybeSingle<{
+      name: string;
+      birth_date: string;
+      birth_is_lunar: boolean;
+      emoji_key: string;
+      pet_name_for_partner: string | null;
+    }>();
 
   // 해제 뒤 유예 기간 중인지. previous_couple_id가 남아 있으면 그렇다.
   const { data: prev } = ctx.me.previous_couple_id
@@ -117,12 +130,6 @@ export default async function SettingsPage() {
             </dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-ash">나</dt>
-            <dd>
-              {ctx.me.emoji_key} {ctx.me.display_name ?? ctx.me.name}
-            </dd>
-          </div>
-          <div className="flex justify-between">
             <dt className="text-ash">상대</dt>
             <dd>
               {ctx.partner ? `${ctx.partner.emoji_key} ${ctx.label}` : "연결 안 됨"}
@@ -130,6 +137,20 @@ export default async function SettingsPage() {
           </div>
         </dl>
       </section>
+
+      {myProfile && (
+        <ProfileCard
+          initial={{
+            name: myProfile.name,
+            birthDate: myProfile.birth_date,
+            birthIsLunar: myProfile.birth_is_lunar,
+            emoji: myProfile.emoji_key,
+            petName: myProfile.pet_name_for_partner ?? "",
+          }}
+          partnerName={ctx.partner?.name ?? null}
+          paired={Boolean(ctx.partner)}
+        />
+      )}
 
       <PasswordCard email={ctx.email ?? null} />
 

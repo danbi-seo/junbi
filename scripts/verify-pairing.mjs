@@ -110,6 +110,24 @@ try {
     `status ${x.status}`,
   );
 
+  // 생일을 잘못 넣는 일이 잦다. 페어링이 끝난 뒤에도 고칠 수 있어야 한다.
+  x = await rpc(a, "create_my_profile", {
+    p_name: "검증가", p_birth: "1996-04-16", p_emoji: "🐼",
+  });
+  let mine = await (
+    await admin(`profiles?select=birth_date,emoji_key&id=eq.${a.id}`)
+  ).json();
+  check(
+    "프로필을 나중에 고칠 수 있다",
+    "생일을 틀리게 넣으면 다음에 연결할 때 상대가 나를 못 알아본다",
+    x.status < 400 && mine[0]?.birth_date === "1996-04-16" &&
+      mine[0]?.emoji_key === "🐼",
+    JSON.stringify(mine),
+  );
+  await rpc(a, "create_my_profile", {
+    p_name: "검증가", p_birth: "1996-03-15", p_emoji: "🐰",
+  });
+
   await rpc(b, "create_my_profile", {
     p_name: "검증나", p_birth: "1997-08-03", p_emoji: "🐻",
   });
