@@ -38,7 +38,15 @@ export default async function PairPage(props: PageProps<"/pair">) {
       .select("status")
       .eq("id", me.couple_id)
       .maybeSingle<{ status: string }>();
-    if (couple?.status === "active") redirect("/");
+    // 연결이 끝났으면 여기 있을 이유가 없다.
+    //
+    // 다만 애칭을 아직 안 정했으면 환영 화면으로 보낸다.
+    // 초대한 쪽은 확정 버튼이 직접 데려가지만, 수락한 쪽은 대기 화면에서
+    // 곧장 앱으로 넘어가 '연결됐어요'도 애칭도 못 보고 지나쳤다.
+    // 애칭은 각자 따로 정하는 것이라 한쪽만 묻고 끝내면 반쪽이 된다.
+    if (couple?.status === "active") {
+      redirect(me?.pet_name_for_partner ? "/" : "/pair/welcome");
+    }
   }
 
   // 살아 있는 내 초대 코드. 화면이 새로 그려져도 코드가 사라지면 안 된다.

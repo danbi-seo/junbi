@@ -290,6 +290,19 @@ try {
     JSON.stringify(inv),
   );
 
+  // 확정 직후에는 두 사람 다 애칭이 비어 있어야 한다.
+  // /pair가 이걸 보고 환영 화면으로 보낸다. 초대한 쪽은 확정 버튼이
+  // 데려가지만 수락한 쪽은 이 조건이 유일한 통로다.
+  const fresh = await (
+    await admin(`profiles?select=id,pet_name_for_partner&id=in.(${a.id},${b.id})`)
+  ).json();
+  check(
+    "확정 직후 두 사람 다 애칭이 비어 있다",
+    "수락한 쪽은 이 값이 비어 있어야 환영 화면을 본다. 아니면 그냥 앱으로 넘어가 애칭을 못 정한다",
+    fresh.length === 2 && fresh.every((f) => f.pet_name_for_partner === null),
+    JSON.stringify(fresh),
+  );
+
   // ── 6. 애칭 ──────────────────────────────────────────────────
   await rpc(a, "set_pet_name", { p_name: "담비" });
   await rpc(b, "set_pet_name", { p_name: "주뇨" });
