@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { createClient, getUser } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { getContext } from "@/lib/session";
 import { dayRange, monthGridRange, todayIn, formatDay } from "@/lib/time";
 import type { VisibleEvent } from "@/lib/events";
@@ -31,24 +32,10 @@ import { PartnerHealthChip } from "./partner-health";
 export default async function HomePage(props: PageProps<"/">) {
   const ctx = await getContext();
 
-  // 0단계에서는 프로필과 페어링을 SQL로 직접 넣는다.
-  // 가입·페어링 화면은 7단계다 → docs/03-roadmap.md
-  if (!ctx) {
-    const user = await getUser();
-    if (!user) return null; // proxy.ts가 이미 로그인 화면으로 보낸다
-    return (
-      <Shell>
-        <p className="leading-7 text-ash">
-          아직 프로필이 없어요.
-          <br />
-          0단계에서는 SQL로 직접 넣습니다.
-        </p>
-        <code className="mt-4 block rounded-lg bg-card px-4 py-3 text-xs break-all">
-          {user.id}
-        </code>
-      </Shell>
-    );
-  }
+  // 프로필이 없거나 짝이 없으면 페어링 화면으로 보낸다.
+  // 메인은 '상대가 지금 뭐 하고 있나'가 전부라, 짝이 없으면 볼 게 없다.
+  if (!ctx) redirect("/pair");
+  if (!ctx.partner) redirect("/pair");
 
   const sp = await props.searchParams;
   const today = todayIn(ctx.timeZone);

@@ -11,13 +11,14 @@
     "db:push": "supabase db push --linked",
     "verify:bundle": "node --env-file=.env.local scripts/verify-bundle.mjs",
     "verify:masking": "node --env-file=.env.local scripts/verify-masking.mjs",
-    "verify": "npm run verify:rls && npm run verify:masking && npm run verify:push && npm run verify:expenses && npm run verify:health && npm run verify:dissolve",
+    "verify": "npm run verify:rls && npm run verify:masking && npm run verify:push && npm run verify:expenses && npm run verify:health && npm run verify:dissolve && npm run verify:pairing",
     "verify:ics": "node --env-file=.env.local scripts/verify-ics.mjs",
     "verify:push": "node --env-file=.env.local scripts/verify-push.mjs",
     "fixtures": "node --env-file=.env.local scripts/dev-fixtures.mjs",
     "verify:expenses": "node --env-file=.env.local scripts/verify-expenses.mjs",
     "verify:health": "node --env-file=.env.local scripts/verify-health.mjs",
-    "verify:dissolve": "node --env-file=.env.local scripts/verify-dissolve.mjs"
+    "verify:dissolve": "node --env-file=.env.local scripts/verify-dissolve.mjs",
+    "verify:pairing": "node --env-file=.env.local scripts/verify-pairing.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

@@ -7,7 +7,7 @@
 -- │ 3. 이 파일 전체를 붙여넣는다                                │
 -- │ 4. 아래 '여기 한 줄'의 CRON_SECRET을 .env.local 값으로 채운다│
 -- │ 5. Run                                                      │
--- │ 6. 맨 아래 확인 쿼리에 job 4개가 보이면 끝                  │
+-- │ 6. 맨 아래 확인 쿼리에 job 5개가 보이면 끝                  │
 -- └────────────────────────────────────────────────────────────┘
 --
 -- 여러 번 실행해도 안전하다. 기존 job과 비밀값을 덮어쓴다.
@@ -97,8 +97,18 @@ select cron.unschedule('purge-dissolved')
 select cron.schedule('purge-dissolved', '20 19 * * *',
   $job$ select public.purge_dissolved_couples(); $job$);
 
+-- ── 5. 확정 안 된 초대 정리 (새벽 4시 30분) ──────────────────
+--
+-- 24시간 안에 확정 안 된 pending을 푼다.
+-- 안 풀면 수락한 쪽이 영원히 대기 상태로 묶여 다른 사람과 연결도 못 한다.
+select cron.unschedule('expire-pending')
+ where exists (select 1 from cron.job where jobname = 'expire-pending');
+
+select cron.schedule('expire-pending', '30 19 * * *',
+  $job$ select public.expire_pending_couples(); $job$);
+
 -- ── 확인 ──────────────────────────────────────────────────────
--- job 4개가 active = true 로 보이면 성공이다.
+-- job 5개가 active = true 로 보이면 성공이다.
 select jobid, jobname, schedule, active from cron.job order by jobid;
 
 -- 비밀값이 제대로 들어갔는지 (값 자체는 찍지 않는다)

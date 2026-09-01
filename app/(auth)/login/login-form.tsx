@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Step = "start" | "password";
@@ -28,6 +28,9 @@ type Step = "start" | "password";
  */
 export function LoginForm() {
   const router = useRouter();
+  // 초대 링크로 들어왔다면 로그인 뒤 그리로 돌아가야 한다.
+  // 안 그러면 코드가 사라져 링크를 다시 받아야 한다.
+  const next = useSearchParams().get("next");
   const supabase = createClient();
 
   const [step, setStep] = useState<Step>("start");
@@ -39,7 +42,7 @@ export function LoginForm() {
   function done() {
     // 서버 컴포넌트가 새 세션을 보게 하려면 refresh가 필요하다.
     router.refresh();
-    router.push("/");
+    router.push(next?.startsWith("/") && !next.startsWith("//") ? next : "/");
   }
 
   async function signInWithKakao() {
@@ -50,7 +53,11 @@ export function LoginForm() {
     // 그 라우트가 이미 code를 세션으로 바꾸고 있어 따로 만들 게 없다.
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "kakao",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        redirectTo:
+          `${window.location.origin}/auth/callback` +
+          (next ? `?next=${encodeURIComponent(next)}` : ""),
+      },
     });
 
     if (error) {

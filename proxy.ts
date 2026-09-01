@@ -57,12 +57,23 @@ export async function proxy(request: NextRequest) {
   if (!user && !isPublic) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    url.search = ''
+    // 초대 링크(/j/ABCDEF)로 들어온 사람은 로그인 뒤 그리로 돌아가야 한다.
+    // 안 그러면 코드가 사라져서 링크를 다시 받아야 한다.
+    if (pathname !== '/') {
+      url.searchParams.set('next', pathname + request.nextUrl.search)
+    }
     return NextResponse.redirect(url)
   }
 
   if (user && pathname.startsWith('/login')) {
+    const next = request.nextUrl.searchParams.get('next')
     const url = request.nextUrl.clone()
-    url.pathname = '/'
+    // 열린 리다이렉트를 막는다. 우리 앱 안의 경로만 따라간다.
+    const safe = next && next.startsWith('/') && !next.startsWith('//') ? next : '/'
+    const [path, query] = safe.split('?')
+    url.pathname = path
+    url.search = query ? `?${query}` : ''
     return NextResponse.redirect(url)
   }
 
