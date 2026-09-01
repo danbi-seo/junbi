@@ -79,8 +79,9 @@ function ProfileStep({ initialCode }: { initialCode: string | null }) {
     >
       <h1 className="font-display text-xl">내 정보</h1>
       <p className="text-sm leading-6 text-ash">
-        이름과 생일은 <b>서로 확인할 때만</b> 써요. 달력이나 알림에는 애칭만
-        나와요.
+        이름과 생일은 <b>서로 확인할 때만</b> 써요.
+        <br />
+        달력이나 알림에는 애칭만 나와요.
       </p>
 
       <label className="flex flex-col gap-2">

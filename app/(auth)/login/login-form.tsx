@@ -62,7 +62,9 @@ export function LoginForm() {
 
     if (error) {
       setBusy(false);
-      setError("카카오 로그인을 시작하지 못했어요. 잠시 뒤에 다시 시도해 주세요.");
+      setError(
+        "카카오 로그인을 시작하지 못했어요. 잠시 뒤에 다시 시도해 주세요.",
+      );
     }
     // 성공하면 페이지가 카카오로 넘어간다. busy는 그대로 둔다.
   }
@@ -105,9 +107,7 @@ export function LoginForm() {
 
         {error && <p className="text-sm text-danger">{error}</p>}
 
-        <p className="text-sm leading-6 text-ash">
-          로그인에만 써요. 친구 목록이나 메시지 보내기 권한은 받지 않아요.
-        </p>
+        <p className="text-sm leading-6 text-ash">로그인 할때만 사용됩니다.</p>
 
         <button
           type="button"
