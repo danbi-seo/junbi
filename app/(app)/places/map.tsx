@@ -70,14 +70,43 @@ export function PlaceMap({
 
       for (const p of withCoord) {
         const c = CATEGORY[p.category];
+
+        /*
+         * 이모지를 지도 위에 맨몸으로 올리면 안 보인다.
+         *
+         * 지도 타일은 색이 제각각이라(초록 공원, 회색 도로, 파란 물) 어떤
+         * 배경에서도 읽히는 이모지는 없다. 그림자만으로는 부족했다.
+         *
+         * 흰 원으로 감싸고 아래에 꼭지를 붙여 핀처럼 만든다.
+         * 원이 배경을 끊어 주므로 타일 색과 무관하게 읽힌다.
+         *
+         * 다녀온 곳은 ✅. 색만으로 구분하지 않는다 → 설계 원칙 4
+         */
         const icon = L.divIcon({
           className: "",
-          // 다녀온 곳은 ✅. 색만으로 구분하지 않는다.
-          html: `<div style="font-size:22px;line-height:1;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))">${
-            p.visited_at ? "✅" : c.emoji
-          }</div>`,
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
+          html: `
+            <div style="
+              position:relative;width:34px;height:44px;
+              filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))
+            ">
+              <div style="
+                width:34px;height:34px;border-radius:9999px;
+                background:#fff;border:2px solid #3b2b22;
+                display:flex;align-items:center;justify-content:center;
+                font-size:18px;line-height:1
+              ">${p.visited_at ? "✅" : c.emoji}</div>
+              <div style="
+                position:absolute;left:50%;top:30px;transform:translateX(-50%);
+                width:0;height:0;
+                border-left:6px solid transparent;
+                border-right:6px solid transparent;
+                border-top:10px solid #3b2b22
+              "></div>
+            </div>`,
+          iconSize: [34, 44],
+          // 핀 끝이 좌표를 가리켜야 한다. 가운데를 잡으면 실제 위치보다
+          // 아래를 가리키는 것처럼 보인다.
+          iconAnchor: [17, 44],
         });
         const marker = L.marker([p.lat!, p.lng!], { icon, title: p.name })
           .addTo(map)
@@ -104,8 +133,23 @@ export function PlaceMap({
     };
   }, [places]);
 
-  // 목록에서 고르면 지도가 그 핀으로 움직인다
+  // 목록에서 고르면 지도가 그 핀으로 움직이고, 그 핀이 커진다
   useEffect(() => {
+    // 고른 핀만 키우고 앞으로 뺀다. 핀이 여러 개 겹치면
+    // 지도가 움직여도 어느 게 그건지 알 수 없다.
+    for (const [id, m] of markersRef.current) {
+      const marker = m as { getElement?: () => HTMLElement | null };
+      const el = marker.getElement?.();
+      // 루트 요소의 transform은 Leaflet이 위치 계산에 쓴다. 건드리면 핀이
+      // 엉뚱한 데로 간다. 우리가 만든 안쪽 div만 손댄다.
+      const inner = el?.firstElementChild as HTMLElement | undefined;
+      if (!el || !inner) continue;
+      const on = id === selectedId;
+      el.style.zIndex = on ? "1000" : "";
+      inner.style.transformOrigin = "50% 100%";
+      inner.style.transform = on ? "scale(1.25)" : "";
+    }
+
     if (!selectedId) return;
     const p = places.find((x) => x.id === selectedId);
     const map = mapRef.current as { setView?: (c: [number, number], z: number) => void } | null;
