@@ -124,6 +124,26 @@ button:disabled {
   font-variant-numeric: tabular-nums;
 }
 
+/**
+ * 날짜·시각 입력이 너비를 따르게 한다.
+ *
+ * iOS Safari는 이 입력들을 기본 모양(-webkit-appearance)으로 그리는데,
+ * 그 모양은 **내용 너비로 고정**돼서 w-full을 줘도 무시한다.
+ * 그래서 '내 정보' 화면에서 이름 칸은 꽉 차고 생년월일 칸만 짧아 보였다.
+ *
+ * 너비를 여기서 정하지는 않는다. 일정 폼과 루틴 폼의 시각 칸은
+ * 한 줄에 나란히 놓으려고 일부러 내용 너비를 쓰고 있다.
+ * 모양만 지우고, 너비는 각 화면이 정하게 둔다.
+ */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+  -webkit-appearance: none;
+  appearance: none;
+  /* flex 안에서 줄어들 수 있게. 기본값 auto면 밀려나 가로 스크롤이 생긴다. */
+  min-width: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

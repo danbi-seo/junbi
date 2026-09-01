@@ -277,7 +277,11 @@ function InviteStep({ initialCode }: { initialCode: string | null }) {
 
       {error && <p className="text-sm text-danger">{error}</p>}
 
-      <button type="submit" disabled={pending || code.length < 6} className={primary}>
+      <button
+        type="submit"
+        disabled={pending || code.length < 6}
+        className={primary}
+      >
         {pending ? "확인 중…" : "확인"}
       </button>
 
@@ -345,7 +349,11 @@ function PendingStep({ state }: { state: NonNullable<PendingState> }) {
           <br />
           그때까지는 서로의 일정이 보이지 않아요.
         </p>
-        <button type="button" onClick={() => router.refresh()} className={primary}>
+        <button
+          type="button"
+          onClick={() => router.refresh()}
+          className={primary}
+        >
           새로고침
         </button>
         <button
@@ -446,7 +454,12 @@ function ConfirmPerson({
       {error && <p className="text-sm text-danger">{error}</p>}
 
       <div className="flex gap-3">
-        <button type="button" disabled={pending} onClick={onYes} className={primary}>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={onYes}
+          className={primary}
+        >
           {pending ? "처리 중…" : yes}
         </button>
         <button
