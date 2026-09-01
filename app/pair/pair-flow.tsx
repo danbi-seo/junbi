@@ -289,6 +289,18 @@ function PendingStep({
       router.refresh();
     });
 
+  // 상대가 확인했는지 알아서 본다.
+  //
+  // 버튼을 두면 "이걸 왜 눌러야 하지"가 된다. 상대가 링크를 여는 건
+  // 보통 몇 분 안이라 그동안만 몇 초에 한 번 물어보면 된다.
+  //
+  // Realtime을 쓰지 않는 이유: couples·profiles는 publication에 없고,
+  // 이 짧은 순간을 위해 넣으면 페어링 정보가 실시간 채널로 흐른다.
+  useEffect(() => {
+    const id = setInterval(() => router.refresh(), 4000);
+    return () => clearInterval(id);
+  }, [router]);
+
   // 초대한 쪽인데 상대가 아직 안 왔다
   // 초대한 쪽인데 상대가 아직 안 왔다.
   //
@@ -314,13 +326,10 @@ function PendingStep({
           링크가 다른 사람에게 가더라도 연결되지 않아요.
         </p>
 
-        <button
-          type="button"
-          onClick={() => router.refresh()}
-          className={primary}
-        >
-          확인했는지 보기
-        </button>
+        <p className="text-sm text-ash">
+          상대가 확인하면 이 화면이 알아서 바뀌어요.
+        </p>
+
         <button
           type="button"
           disabled={pending}
@@ -343,13 +352,11 @@ function PendingStep({
           <br />
           그때까지는 서로의 일정이 보이지 않아요.
         </p>
-        <button
-          type="button"
-          onClick={() => router.refresh()}
-          className={primary}
-        >
-          새로고침
-        </button>
+
+        <p className="text-sm text-ash">
+          확정하면 이 화면이 알아서 바뀌어요.
+        </p>
+
         <button
           type="button"
           disabled={pending}
