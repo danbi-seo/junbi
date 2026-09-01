@@ -101,6 +101,18 @@ async function cleanup() {
   await admin(`couples?id=eq.${couple ?? "00000000-0000-0000-0000-000000000000"}`, {
     method: "DELETE",
   }).catch(() => {});
+
+  // 검사 도중 만들어진 커플이 더 있을 수 있다(복구 검사가 새 커플을 만든다).
+  // 아무도 안 남은 커플은 전부 지운다 — 실제 커플에는 늘 사람이 있다.
+  const all = await (await admin("couples?select=id")).json().catch(() => []);
+  for (const c of Array.isArray(all) ? all : []) {
+    const members = await (
+      await admin(`profiles?select=id&couple_id=eq.${c.id}`)
+    ).json();
+    if (Array.isArray(members) && members.length === 0) {
+      await admin(`couples?id=eq.${c.id}`, { method: "DELETE" }).catch(() => {});
+    }
+  }
 }
 
 console.log("\n연결 해제 · 파기 · 탈퇴 검증\n");
@@ -323,6 +335,79 @@ try {
     cyc.length === 0,
     `${cyc.length}건`,
   );
+
+  // ── 복구가 새 관계를 덮어쓰지 않는다 ─────────────────────────
+  //
+  // 해제 → 다른 사람과 새로 연결 → 옛 짝이 복구를 청하면?
+  // 예전에는 수락하는 순간 새 커플에서 조용히 빠져나왔다. 새 짝은 혼자 남았다.
+  // 끊는 건 혼자 할 수 있어야 하지만, 그게 이미 맺은 다른 관계를 끊는
+  // 권한까지 되면 안 된다.
+  {
+    await rpc(a, "dissolve_couple", { p_purge_now: false });
+
+    const c2 = await makeUser("c");
+    created.push(c2);
+    await admin("profiles", {
+      method: "POST",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify([
+        { id: c2.id, name: "검증다", birth_date: "1991-01-01", emoji_key: "🐱" },
+      ]),
+    });
+
+    const iv = await rpc(a, "create_invite");
+    await rpc(c2, "accept_invite", { p_code: iv.body?.code });
+    await rpc(a, "confirm_pair", {});
+
+    const moved = (
+      await (await admin(`profiles?select=couple_id,previous_couple_id&id=eq.${a.id}`)).json()
+    )[0];
+
+    check(
+      "새 커플이 확정되면 옛 관계의 흔적이 지워진다",
+      "previous_couple_id가 남으면 설정에 옛 복구 카드가 계속 뜨고, 누르면 새 관계가 끊긴다",
+      moved?.previous_couple_id === null,
+      JSON.stringify(moved),
+    );
+
+    await rpc(b, "request_restore");
+    x = await rpc(a, "accept_restore");
+    check(
+      "새로 연결한 사람은 옛 커플로 복구할 수 없다",
+      "수락하는 순간 새 짝이 혼자 남는다. 아무도 알림을 못 받는다",
+      x.status >= 400,
+      `status ${x.status} ${JSON.stringify(x.body).slice(0, 100)}`,
+    );
+
+    const still = (
+      await (await admin(`profiles?select=couple_id&id=eq.${a.id}`)).json()
+    )[0];
+    check(
+      "복구 시도 뒤에도 새 커플에 그대로 있다",
+      "조용히 관계가 바뀌는 게 이 버그의 가장 나쁜 점이었다",
+      still?.couple_id === moved?.couple_id,
+      `${still?.couple_id} vs ${moved?.couple_id}`,
+    );
+
+    // 뒷정리 — 아래 검사들은 원래 커플로 이어진다.
+    // 새로 만든 커플은 즉시 파기로 지운다.
+    await rpc(a, "dissolve_couple", { p_purge_now: true });
+    await admin(`profiles?id=eq.${a.id}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ couple_id: couple, member_slot: "a", previous_couple_id: null }),
+    });
+    await admin(`profiles?id=eq.${b.id}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ couple_id: couple, member_slot: "b", previous_couple_id: null }),
+    });
+    await admin(`couples?id=eq.${couple}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=minimal" },
+      body: JSON.stringify({ status: "active", purge_after: null, dissolved_at: null }),
+    });
+  }
 
   // ── 즉시 삭제 ───────────────────────────────────────────────
   x = await rpc(a, "dissolve_couple", { p_purge_now: true });
