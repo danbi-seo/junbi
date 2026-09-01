@@ -129,10 +129,29 @@ export default async function SettingsPage() {
               {ctx.email ?? "카카오 계정"}
             </dd>
           </div>
-          <div className="flex justify-between">
-            <dt className="text-ash">상대</dt>
-            <dd>
-              {ctx.partner ? `${ctx.partner.emoji_key} ${ctx.label}` : "연결 안 됨"}
+          {/*
+           * 여기만 실명을 함께 보여준다.
+           *
+           * '실명은 페어링 확인 화면 외에 어디에도 나오지 않는다'가 원칙인데,
+           * 이 줄은 성격이 그 확인 화면과 같다 — "내가 누구와 연결돼 있나"다.
+           * 애칭은 내가 붙인 이름이라 확인이 안 된다. 엉뚱한 사람과 연결돼
+           * 있어도 애칭만 보면 알 수 없다.
+           *
+           * 달력·알림·잠금화면에는 여전히 애칭만 나간다.
+           */}
+          <div className="flex justify-between gap-4">
+            <dt className="shrink-0 text-ash">상대</dt>
+            <dd className="text-right">
+              {ctx.partner ? (
+                <>
+                  {ctx.partner.emoji_key} {ctx.label}
+                  {ctx.label !== ctx.partner.name && (
+                    <span className="text-ash"> · {ctx.partner.name}</span>
+                  )}
+                </>
+              ) : (
+                "연결 안 됨"
+              )}
             </dd>
           </div>
         </dl>
