@@ -27,7 +27,13 @@ type Prompt = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
-export function SetupCard({ calendarConnected }: { calendarConnected: boolean }) {
+export function SetupCard({
+  calendarConnected,
+  pushEnabled,
+}: {
+  calendarConnected: boolean;
+  pushEnabled: boolean;
+}) {
   const state = useSyncExternalStore<InstallState | null>(
     subscribeDisplayMode,
     installState,
@@ -55,8 +61,9 @@ export function SetupCard({ calendarConnected }: { calendarConnected: boolean })
   if (state === null) return null;
 
   const installed = state === "installed";
-  // 셋 다 끝나면 카드를 감춘다. 알림은 3단계라 아직 항목에 넣지 않는다.
-  if (installed && calendarConnected) return null;
+  // 셋 다 끝나면 카드를 감춘다. 할 일이 없는데 목록이 남아 있으면
+  // "뭔가 덜 했나" 하는 느낌만 준다.
+  if (installed && calendarConnected && pushEnabled) return null;
 
   const copy = installed ? null : INSTALL_COPY[state];
 
@@ -89,7 +96,14 @@ export function SetupCard({ calendarConnected }: { calendarConnected: boolean })
           label={calendarConnected ? "캘린더 앱 연결됨" : "캘린더 앱 연결 안 됨"}
         />
 
-        <Row done={false} label="알림 — 3단계에서 붙습니다" muted />
+        {/*
+         * 브라우저 권한이 아니라 서버에 구독 행이 있는지로 판단한다.
+         * 권한만 보면 '켜짐'인데 실제로는 한 통도 안 오는 상태를 못 잡는다.
+         */}
+        <Row
+          done={pushEnabled}
+          label={pushEnabled ? "알림 켜짐" : "알림 꺼짐"}
+        />
       </ul>
 
       {open && copy && (

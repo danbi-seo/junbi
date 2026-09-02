@@ -94,7 +94,7 @@ export default async function SettingsPage() {
         <h1 className="font-display text-lg">설정</h1>
       </div>
 
-      <SetupCard calendarConnected={!!row?.last_read} />
+      <SetupCard calendarConnected={!!row?.last_read} pushEnabled={!!sub} />
 
       <IcsCard
         initialToken={row?.token ?? null}

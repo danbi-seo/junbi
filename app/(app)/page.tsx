@@ -27,7 +27,6 @@ import { PartnerHealthChip } from "./partner-health";
  * 내 상태는 내가 이미 안다. 두 사람을 좌우로 똑같이 배치하면
  * 화면 절반이 이미 아는 정보로 채워진다 → docs/09-ui-spec.md
  *
- * 상대 상태 카드는 4단계에서 붙는다. 지금은 이름과 이모지만.
  */
 export default async function HomePage(props: PageProps<"/">) {
   const ctx = await getContext();
