@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -13,7 +14,8 @@ export async function markInstalled(): Promise<void> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return;
+  // 세션이 끊겼으면 조용히 넘기지 않고 로그인으로 보낸다.
+  if (!user) redirect("/login");
 
   await supabase
     .from("onboarding_progress")

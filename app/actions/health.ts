@@ -1,8 +1,22 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { MyHealth } from "@/lib/health";
+
+
+/**
+ * 세션이 끊겼으면 로그인으로 보낸다.
+ *
+ * DB 함수들이 NOT_SIGNED_IN을 올린다. 그걸 "저장하지 못했어요"로 뭉개면
+ * 사용자는 로그인된 화면에서 실패만 보고 뭘 해야 할지 모른다.
+ */
+function signedOut(message: string): boolean {
+  return (
+    message.includes("NOT_SIGNED_IN") || message.includes("NOT_AUTHENTICATED")
+  );
+}
 
 export type Result<T = undefined> =
   | { ok: true; data?: T }
@@ -32,6 +46,7 @@ export async function setHealthSharing(patch: {
     p_consent: patch.consent ?? null,
   });
 
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) {
     // 커플에서 한 사람만 켤 수 있다. 화면이 카드를 안 그리므로 여기까지
     // 오는 건 드문데, 두 사람이 동시에 켜면 뒤늦은 쪽이 걸린다.
@@ -51,6 +66,7 @@ export async function setHealthSharing(patch: {
 export async function logPeriodStart(date?: string): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("log_period_start", { p_date: date ?? null });
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) {
     return fail(
       error.message.includes("MODULE_OFF")
@@ -67,6 +83,7 @@ export async function logPeriodStart(date?: string): Promise<Result> {
 export async function logPeriodEnd(date?: string): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("log_period_end", { p_date: date ?? null });
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail("기록하지 못했어요");
   revalidatePath("/health");
   return { ok: true };
@@ -85,6 +102,7 @@ export async function updatePeriod(
       ...("to" in patch ? { period_end: patch.to } : {}),
     })
     .eq("id", id);
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail("고치지 못했어요");
   revalidatePath("/health");
   return { ok: true };
@@ -93,6 +111,7 @@ export async function updatePeriod(
 export async function deletePeriod(id: string): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.from("cycles").delete().eq("id", id);
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail("지우지 못했어요");
   revalidatePath("/health");
   return { ok: true };
@@ -102,6 +121,7 @@ export async function deletePeriod(id: string): Promise<Result> {
 export async function ackOngoing(id: string): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("ack_ongoing", { p_id: id });
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail();
   revalidatePath("/health");
   return { ok: true };
@@ -125,6 +145,7 @@ export async function saveCondition(input: {
     p_pain: input.pain ?? null,
     p_symptoms: input.symptoms ?? null,
   });
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail();
   revalidatePath("/health");
   revalidatePath("/");
@@ -142,6 +163,7 @@ export async function exportHealth(): Promise<
 > {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("export_my_health");
+  if (error && signedOut(error.message)) redirect("/login");
   if (error || !data) return fail("내보내지 못했어요");
 
   type Row = {

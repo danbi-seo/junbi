@@ -1,7 +1,21 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+
+
+/**
+ * 세션이 끊겼으면 로그인으로 보낸다.
+ *
+ * DB 함수들이 NOT_SIGNED_IN을 올린다. 그걸 "저장하지 못했어요"로 뭉개면
+ * 사용자는 로그인된 화면에서 실패만 보고 뭘 해야 할지 모른다.
+ */
+function signedOut(message: string): boolean {
+  return (
+    message.includes("NOT_SIGNED_IN") || message.includes("NOT_AUTHENTICATED")
+  );
+}
 
 export type Result<T = undefined> =
   | { ok: true; data?: T }
@@ -33,6 +47,7 @@ export async function createMyProfile(form: FormData): Promise<Result> {
     p_timezone: String(form.get("timezone") ?? "Asia/Seoul"),
   });
 
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) {
     return fail(
       error.message.includes("NAME_REQUIRED")
@@ -51,6 +66,7 @@ export async function createInvite(): Promise<
 > {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("create_invite");
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail(invitedMessage(error.message));
   revalidatePath("/pair");
   return { ok: true, data: data as { code: string; expiresAt: string } };
@@ -69,6 +85,7 @@ export async function previewInvite(
 ): Promise<Result<InvitePreview>> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("preview_invite", { p_code: code });
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail(invitedMessage(error.message));
   return { ok: true, data: data as InvitePreview };
 }
@@ -76,6 +93,7 @@ export async function previewInvite(
 export async function acceptInvite(code: string): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("accept_invite", { p_code: code });
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail(invitedMessage(error.message));
   revalidatePath("/", "layout");
   return { ok: true };
@@ -99,6 +117,7 @@ export async function confirmPair(startedOn: string | null): Promise<Result> {
   const { error } = await supabase.rpc("confirm_pair", {
     p_started_on: startedOn || null,
   });
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) {
     return fail(
       error.message.includes("NO_PARTNER_YET")
@@ -115,6 +134,7 @@ export async function confirmPair(startedOn: string | null): Promise<Result> {
 export async function cancelPair(): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("cancel_pair");
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail("취소하지 못했어요");
   revalidatePath("/", "layout");
   return { ok: true };
@@ -124,6 +144,7 @@ export async function cancelPair(): Promise<Result> {
 export async function setPetName(name: string): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("set_pet_name", { p_name: name });
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail("저장하지 못했어요");
   revalidatePath("/", "layout");
   return { ok: true };
@@ -132,6 +153,7 @@ export async function setPetName(name: string): Promise<Result> {
 export async function setStartedOn(date: string | null): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("set_started_on", { p_date: date || null });
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) {
     return fail(
       error.message.includes("FUTURE_DATE")

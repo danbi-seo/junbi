@@ -1,8 +1,22 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { StatusKind } from "@/lib/presence";
+
+
+/**
+ * 세션이 끊겼으면 로그인으로 보낸다.
+ *
+ * DB 함수들이 NOT_SIGNED_IN을 올린다. 그걸 "저장하지 못했어요"로 뭉개면
+ * 사용자는 로그인된 화면에서 실패만 보고 뭘 해야 할지 모른다.
+ */
+function signedOut(message: string): boolean {
+  return (
+    message.includes("NOT_SIGNED_IN") || message.includes("NOT_AUTHENTICATED")
+  );
+}
 
 export type Result = { ok: true } | { ok: false; message: string };
 
@@ -23,6 +37,7 @@ export async function setStatus(
     // 반올림하지 않는다. '30분'(0.5)이 1시간으로 저장되던 원인이었다.
     p_hours: Math.max(0.5, hours),
   });
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail();
   revalidatePath("/", "layout");
   return { ok: true };
@@ -31,6 +46,7 @@ export async function setStatus(
 export async function clearStatus(kind: StatusKind): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("clear_status", { p_kind: kind });
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail("지우지 못했어요");
   revalidatePath("/", "layout");
   return { ok: true };
@@ -69,6 +85,7 @@ export async function addRoutine(form: FormData): Promise<Result> {
     ends_at,
   });
 
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail();
   revalidatePath("/", "layout");
   return { ok: true };
@@ -77,6 +94,7 @@ export async function addRoutine(form: FormData): Promise<Result> {
 export async function toggleRoutine(id: string, enabled: boolean): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.from("routines").update({ enabled }).eq("id", id);
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail();
   revalidatePath("/", "layout");
   return { ok: true };
@@ -85,6 +103,7 @@ export async function toggleRoutine(id: string, enabled: boolean): Promise<Resul
 export async function deleteRoutine(id: string): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.from("routines").delete().eq("id", id);
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail("지우지 못했어요");
   revalidatePath("/", "layout");
   return { ok: true };
@@ -97,6 +116,7 @@ export async function skipToday(id: string, skip: boolean): Promise<Result> {
     skip ? "skip_routine_today" : "unskip_routine_today",
     { p_routine: id },
   );
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail();
   revalidatePath("/", "layout");
   return { ok: true };

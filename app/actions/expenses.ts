@@ -1,8 +1,22 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { SplitType } from "@/lib/expenses";
+
+
+/**
+ * 세션이 끊겼으면 로그인으로 보낸다.
+ *
+ * DB 함수들이 NOT_SIGNED_IN을 올린다. 그걸 "저장하지 못했어요"로 뭉개면
+ * 사용자는 로그인된 화면에서 실패만 보고 뭘 해야 할지 모른다.
+ */
+function signedOut(message: string): boolean {
+  return (
+    message.includes("NOT_SIGNED_IN") || message.includes("NOT_AUTHENTICATED")
+  );
+}
 
 export type Result = { ok: true } | { ok: false; message: string };
 const fail = (message = "저장하지 못했어요") => ({ ok: false as const, message });
@@ -12,7 +26,9 @@ async function context() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return null;
+  // 세션이 끊긴 것과 짝이 없는 것은 사용자가 할 일이 다르다.
+  // 둘 다 null로 뭉개면 "먼저 상대와 연결해 주세요"가 뜬다 — 틀린 안내다.
+  if (!user) redirect("/login");
 
   const { data: me } = await supabase
     .from("profiles")
@@ -52,6 +68,7 @@ export async function addExpense(form: FormData): Promise<Result> {
     silent: form.get("silent") === "on",
   });
 
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail();
   revalidatePath("/expenses");
   return { ok: true };
@@ -61,6 +78,7 @@ export async function deleteExpense(id: string): Promise<Result> {
   const ctx = await context();
   if (!ctx) return fail();
   const { error } = await ctx.supabase.from("expenses").delete().eq("id", id);
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail("지우지 못했어요");
   revalidatePath("/expenses");
   return { ok: true };
@@ -77,6 +95,7 @@ export async function settleUp(memo: string | null): Promise<Result> {
   if (!ctx) return fail();
 
   const { error } = await ctx.supabase.rpc("settle_up", { p_memo: memo });
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) {
     return fail(
       error.message.includes("NOTHING_TO_SETTLE")
@@ -94,6 +113,7 @@ export async function undoSettlement(id: string): Promise<Result> {
   const ctx = await context();
   if (!ctx) return fail();
   const { error } = await ctx.supabase.rpc("undo_settlement", { p_id: id });
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) return fail("되돌리지 못했어요");
   revalidatePath("/expenses");
   return { ok: true };

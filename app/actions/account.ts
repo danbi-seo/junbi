@@ -1,7 +1,21 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+
+
+/**
+ * 세션이 끊겼으면 로그인으로 보낸다.
+ *
+ * DB 함수들이 NOT_SIGNED_IN을 올린다. 그걸 "저장하지 못했어요"로 뭉개면
+ * 사용자는 로그인된 화면에서 실패만 보고 뭘 해야 할지 모른다.
+ */
+function signedOut(message: string): boolean {
+  return (
+    message.includes("NOT_SIGNED_IN") || message.includes("NOT_AUTHENTICATED")
+  );
+}
 
 export type Result<T = undefined> =
   | { ok: true; data?: T }
@@ -43,6 +57,7 @@ export async function dissolveCouple(purgeNow: boolean): Promise<Result> {
   const { error } = await supabase.rpc("dissolve_couple", {
     p_purge_now: purgeNow,
   });
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) {
     return fail(
       error.message.includes("NOT_PAIRED")
@@ -58,6 +73,7 @@ export async function dissolveCouple(purgeNow: boolean): Promise<Result> {
 export async function requestRestore(): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("request_restore");
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) {
     return fail(
       error.message.includes("EXPIRED")
@@ -74,6 +90,7 @@ export async function requestRestore(): Promise<Result> {
 export async function acceptRestore(): Promise<Result> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("accept_restore");
+  if (error && signedOut(error.message)) redirect("/login");
   if (error) {
     return fail(
       error.message.includes("NEED_PARTNER")
@@ -93,6 +110,7 @@ export async function acceptRestore(): Promise<Result> {
 export async function exportCoupleData(): Promise<Result<string>> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("export_my_couple_data");
+  if (error && signedOut(error.message)) redirect("/login");
   if (error || !data) return fail("내보내지 못했어요");
   return { ok: true, data: JSON.stringify(data, null, 2) };
 }

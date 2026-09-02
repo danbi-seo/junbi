@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TEMPLATES, TRAVEL_TEMPLATE, type ChecklistKind } from "@/lib/checklist";
 
@@ -15,7 +16,9 @@ async function context() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return null;
+  // 세션이 끊긴 것과 짝이 없는 것은 사용자가 할 일이 다르다.
+  // 둘 다 null로 뭉개면 "먼저 상대와 연결해 주세요"가 뜬다 — 틀린 안내다.
+  if (!user) redirect("/login");
 
   const { data: me } = await supabase
     .from("profiles")
