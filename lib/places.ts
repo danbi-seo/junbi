@@ -46,14 +46,14 @@ export type Place = {
  * 많이 쓰는 것을 앞에 둔다.
  */
 export const CATEGORY: Record<PlaceCategory, { label: string; emoji: string }> = {
-  restaurant: { label: "맛집", emoji: "🍽" },
+  restaurant: { label: "맛집", emoji: "🍽️" },
   cafe: { label: "카페", emoji: "☕" },
   bar: { label: "술집", emoji: "🍺" },
   sports: { label: "운동", emoji: "🏃" },
   culture: { label: "전시·공연", emoji: "🎭" },
   nature: { label: "산책·자연", emoji: "🌳" },
   activity: { label: "액티비티", emoji: "🎨" },
-  shopping: { label: "쇼핑", emoji: "🛍" },
+  shopping: { label: "쇼핑", emoji: "🛍️" },
   stay: { label: "숙소", emoji: "🏨" },
   travel: { label: "여행", emoji: "✈️" },
   date_course: { label: "데이트코스", emoji: "💜" },

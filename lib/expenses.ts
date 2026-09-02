@@ -40,11 +40,11 @@ export const SPLIT_LABEL: Record<SplitType, string> = {
 };
 
 export const CATEGORIES = [
-  { key: "food", emoji: "🍽", label: "식사" },
+  { key: "food", emoji: "🍽️", label: "식사" },
   { key: "cafe", emoji: "☕", label: "카페" },
   { key: "transport", emoji: "🚗", label: "이동" },
   { key: "ticket", emoji: "🎬", label: "티켓" },
-  { key: "shopping", emoji: "🛍", label: "쇼핑" },
+  { key: "shopping", emoji: "🛍️", label: "쇼핑" },
   { key: "travel", emoji: "✈️", label: "여행" },
   { key: "etc", emoji: "📌", label: "기타" },
 ];

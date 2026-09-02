@@ -10,7 +10,7 @@ import {
 } from "@/app/actions/presence";
 import { DAY_LABEL, routineDays, hhmm, type Routine } from "@/lib/presence";
 
-const EMOJI = ["💼", "😴", "🏋️", "🚇", "📚", "🏠", "🍽", "☕"];
+const EMOJI = ["💼", "😴", "🏋️", "🚇", "📚", "🏠", "🍽️", "☕"];
 const PRESET_DAYS: Array<{ label: string; days: number[] }> = [
   { label: "평일", days: [1, 2, 3, 4, 5] },
   { label: "주말", days: [0, 6] },

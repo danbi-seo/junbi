@@ -56,7 +56,7 @@ export const PRESETS: Array<{ emoji: string; label: string }> = [
   { emoji: "💼", label: "일하는 중" },
   { emoji: "🚇", label: "이동 중" },
   { emoji: "🏃", label: "운동 중" },
-  { emoji: "🍽", label: "밥 먹는 중" },
+  { emoji: "🍽️", label: "밥 먹는 중" },
   { emoji: "🏢", label: "야근 중" },
   { emoji: "🏠", label: "집 도착" },
   { emoji: "☕", label: "쉬는 중" },

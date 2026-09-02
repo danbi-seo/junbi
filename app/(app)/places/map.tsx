@@ -93,7 +93,11 @@ export function PlaceMap({
                 width:34px;height:34px;border-radius:9999px;
                 background:#fff;border:2px solid #3b2b22;
                 display:flex;align-items:center;justify-content:center;
-                font-size:18px;line-height:1
+                font-size:18px;line-height:1;
+                /* 흑백으로 그려지는 이모지는 글자색을 따른다. 어두운 모드에서
+                   글자색이 밝은 크림색이라 흰 원 위에서 완전히 사라졌다.
+                   지도 타일은 늘 밝으므로 여기서는 색을 고정한다. */
+                color:#3b2b22
               ">${p.visited_at ? "✅" : c.emoji}</div>
               <div style="
                 position:absolute;left:50%;top:30px;transform:translateX(-50%);
