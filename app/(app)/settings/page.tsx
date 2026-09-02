@@ -13,6 +13,7 @@ import { NotificationCard, type Prefs } from "./notification-card";
 import { AccountCard } from "./account-card";
 import { PasswordCard } from "./password-card";
 import { ProfileCard } from "./profile-card";
+import { SignOutButton } from "@/app/sign-out";
 
 export const metadata: Metadata = { title: "설정 · JUNBI" };
 
@@ -178,6 +179,18 @@ export default async function SettingsPage() {
         partnerLabel={ctx.label}
         restore={restore}
       />
+
+      {/*
+       * 로그아웃은 좌측 레일에만 있었다. 그건 md 이상에서만 보이므로
+       * 폰에서는 로그아웃할 방법이 아예 없었다.
+       *
+       * 설정은 두 화면 크기에서 모두 닿는 유일한 자리다.
+       * 되돌리기 어려운 버튼(해제·탈퇴) 아래에 두어 실수로 안 눌리게 한다 —
+       * 로그아웃은 위험하지 않지만 자주 쓰는 것도 아니다.
+       */}
+      <div className="flex justify-center pb-4">
+        <SignOutButton />
+      </div>
     </main>
   );
 }
