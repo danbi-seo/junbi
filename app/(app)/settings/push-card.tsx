@@ -7,6 +7,7 @@ import {
   unsubscribePush,
   STEP_LABEL,
   lastPushError,
+  lastSaveError,
   type PushState,
   type PushStep,
 } from "@/lib/push";
@@ -54,7 +55,13 @@ export function PushCard({ hasSubscription }: { hasSubscription: boolean }) {
     } else if (next === "denied") {
       setNote("거절하셨어요. 아래 안내를 참고해 주세요.");
     } else if (next === "save-failed") {
-      setNote("허용은 됐는데 저장에 실패했어요. 다시 시도해 주세요.");
+      // 원인을 그대로 보여준다. 세션이 끊긴 것과 DB가 거부한 것은
+      // 사용자가 할 일이 다르다 — 하나는 재로그인, 하나는 재시도다.
+      setNote(
+        lastSaveError
+          ? `허용은 됐는데 저장에 실패했어요.\n${lastSaveError}`
+          : "허용은 됐는데 저장에 실패했어요. 다시 시도해 주세요.",
+      );
     } else if (next === "no-worker") {
       setNote("알림을 받을 준비가 안 됐어요. 새로고침한 뒤 다시 시도해 주세요.");
     } else if (next === "timeout" || next === "error") {
@@ -151,6 +158,13 @@ ${lastPushError}` : ""),
       ) : state === "save-failed" ? (
         <div className="mt-2 text-sm leading-6 text-ash">
           <p>알림 권한은 받았는데 저장에 실패했어요.</p>
+          {lastSaveError && (
+            <p className="mt-1 text-xs break-words">{lastSaveError}</p>
+          )}
+          <p className="mt-2 text-xs leading-5">
+            로그인이 풀린 경우가 가장 많아요. 다시 시도해도 안 되면 로그아웃 후
+            다시 로그인해 주세요.
+          </p>
           <button
             type="button"
             onClick={turnOn}

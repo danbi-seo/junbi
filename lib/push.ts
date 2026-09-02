@@ -8,6 +8,15 @@ import { createClient } from "@/lib/supabase/client";
  * Firebase 프로젝트도 APNs 키도 필요 없다.
  */
 
+/**
+ * 마지막 저장 실패 이유. 화면이 그대로 보여준다.
+ *
+ * 원인이 셋인데 문구가 하나뿐이라 어디서 막혔는지 알 수 없었다.
+ *   세션이 끊김 · DB가 거부 · 브라우저가 키를 안 줌
+ * 사용자에게 "다시 로그인해 보세요"를 말할 수 있어야 한다.
+ */
+export let lastSaveError: string | null = null;
+
 export type PushState =
   | "unsupported" // 브라우저가 지원하지 않음
   | "needs-install" // 아이폰은 홈 화면에 추가해야만 됨
@@ -73,11 +82,17 @@ function encodeKey(key: ArrayBuffer | null): string {
 }
 
 async function save(sub: PushSubscription): Promise<boolean> {
+  lastSaveError = null;
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return false;
+  if (!user) {
+    // 홈 화면에 추가한 앱은 쿠키를 따로 들고 있어서, 브라우저에서
+    // 로그인했어도 여기서는 세션이 없을 수 있다.
+    lastSaveError = "로그인이 풀렸어요. 다시 로그인한 뒤 시도해 주세요.";
+    return false;
+  }
 
   const json = sub.toJSON();
   // user_id를 반드시 넣는다. NOT NULL이고 기본값이 없어서
@@ -91,7 +106,11 @@ async function save(sub: PushSubscription): Promise<boolean> {
     failed_at: null,
   });
 
-  return !error;
+  if (error) {
+    lastSaveError = error.message;
+    return false;
+  }
+  return true;
 }
 
 /**
