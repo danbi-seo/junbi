@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
 import {
   pushState,
   subscribePush,
@@ -32,6 +33,7 @@ export function PushCard({ hasSubscription }: { hasSubscription: boolean }) {
   const [override, setOverride] = useState<PushState | null>(null);
   const state = override ?? detected;
 
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState<PushStep | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -48,6 +50,15 @@ export function PushCard({ hasSubscription }: { hasSubscription: boolean }) {
     setStep(null);
     // 어디서 멈추는지 보이게 한다. '등록 중…'만 뜨면 원인을 알 수 없다.
     const next = await subscribePush(setStep);
+
+    // 세션이 끊겼으면 여기 머물 이유가 없다.
+    // 로그인된 것처럼 보이는 화면에 실패 문구만 얹으면 뭘 해야 할지 모른다.
+    if (next === "signed-out") {
+      router.replace("/login");
+      router.refresh();
+      return;
+    }
+
     setOverride(next);
     setBusy(false);
     if (next === "granted") {

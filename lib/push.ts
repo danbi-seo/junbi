@@ -24,6 +24,7 @@ export type PushState =
   | "default" // 아직 안 물어봄
   | "granted" // 허용됨
   | "save-failed" // 권한은 받았는데 서버에 저장을 못 함
+  | "signed-out" // 세션이 끊겼다. 화면이 로그인으로 보내야 한다
   | "no-worker" // 서비스 워커가 준비되지 않음
   | "timeout" // 어느 단계에서 응답이 없음
   | "error"; // 브라우저가 거절함 — 이유는 lastPushError에 담긴다
@@ -81,7 +82,7 @@ function encodeKey(key: ArrayBuffer | null): string {
   return btoa(String.fromCharCode(...new Uint8Array(key!)));
 }
 
-async function save(sub: PushSubscription): Promise<boolean> {
+async function save(sub: PushSubscription): Promise<true | "signed-out" | false> {
   lastSaveError = null;
   const supabase = createClient();
   const {
@@ -90,8 +91,11 @@ async function save(sub: PushSubscription): Promise<boolean> {
   if (!user) {
     // 홈 화면에 추가한 앱은 쿠키를 따로 들고 있어서, 브라우저에서
     // 로그인했어도 여기서는 세션이 없을 수 있다.
-    lastSaveError = "로그인이 풀렸어요. 다시 로그인한 뒤 시도해 주세요.";
-    return false;
+    //
+    // 여기서 문구만 띄우고 머물면 안 된다. 로그인된 것처럼 보이는 화면에
+    // 실패 메시지만 얹히면 사용자는 뭘 해야 할지 모른다. 로그인으로 보낸다.
+    lastSaveError = "로그인이 풀렸어요";
+    return "signed-out";
   }
 
   const json = sub.toJSON();
@@ -200,6 +204,7 @@ export async function subscribePush(
   // 저장이 실패하면 알림이 안 온다. 조용히 넘기면 원인을 아무도 모른다.
   const saved = await withTimeout(save(sub), 15000);
   if (saved === "timeout") return "timeout";
+  if (saved === "signed-out") return "signed-out";
 
   onStep?.("done");
   return saved ? "granted" : "save-failed";
