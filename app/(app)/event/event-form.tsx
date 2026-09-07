@@ -63,9 +63,17 @@ export function EventForm({
     if (shown) form.set("emoji", shown);
 
     start(async () => {
-      const res = editing
-        ? await updateEvent(initial.id!, form)
-        : await createEvent(form);
+      // 예외를 잡지 않으면 저장을 눌러도 아무 일이 안 일어난다.
+      // 화면에는 오류도 안 뜨고 버튼만 원래대로 돌아온다.
+      let res;
+      try {
+        res = editing
+          ? await updateEvent(initial.id!, form)
+          : await createEvent(form);
+      } catch {
+        setError("저장하지 못했어요. 잠시 뒤 다시 시도해 주세요");
+        return;
+      }
       if (!res.ok) {
         setError(res.message);
         return;
@@ -78,7 +86,13 @@ export function EventForm({
   function remove() {
     if (!confirm("이 일정을 삭제할까요?")) return;
     start(async () => {
-      const res = await deleteEvent(initial.id!);
+      let res;
+      try {
+        res = await deleteEvent(initial.id!);
+      } catch {
+        setError("지우지 못했어요. 잠시 뒤 다시 시도해 주세요");
+        return;
+      }
       if (!res.ok) {
         setError(res.message);
         return;
@@ -158,12 +172,12 @@ export function EventForm({
         <div className="flex flex-wrap items-center gap-2">
           <input type="date" name="date" defaultValue={initial.date} required className={field} />
           {!allDay && (
-            <input type="time" name="start_time" defaultValue={initial.startTime} className={`${field} tnum`} />
+            <input type="time" name="start_time" defaultValue={initial.startTime} required className={`${field} tnum`} />
           )}
           <span className="text-ash">→</span>
-          <input type="date" name="end_date" defaultValue={initial.endDate} className={field} />
+          <input type="date" name="end_date" defaultValue={initial.endDate} required className={field} />
           {!allDay && (
-            <input type="time" name="end_time" defaultValue={initial.endTime} className={`${field} tnum`} />
+            <input type="time" name="end_time" defaultValue={initial.endTime} required className={`${field} tnum`} />
           )}
         </div>
 

@@ -40,7 +40,7 @@ export function Calendar({
 
   return (
     <section className="mb-6">
-      <div className="mb-2 flex items-baseline justify-between">
+      <div className="mb-2 flex items-center justify-between">
         <h2 className="font-display text-xl">{month}월</h2>
         <div className="flex items-center gap-2 text-sm">
           <Toggle active={view === "week"} href={`/?d=${selected}&v=week`}>
@@ -49,10 +49,13 @@ export function Calendar({
           <Toggle active={view === "month"} href={`/?d=${selected}&v=month`}>
             월
           </Toggle>
-          {/* ＋는 달력 줄 오른쪽에 둔다. 하단 플로팅 버튼은 맨 아래 줄을 가린다. */}
+          {/* ＋는 달력 줄 오른쪽에 둔다. 하단 플로팅 버튼은 맨 아래 줄을 가린다.
+              px/py로 크기를 잡으면 30px밖에 안 돼서 손가락이 자주 빗나간다.
+              44px를 못 박는다 → docs/09-ui-spec.md */}
           <Link
             href={`/new?date=${selected}`}
-            className="ml-1 rounded-lg bg-slot-a px-3 py-1.5 font-medium text-white"
+            aria-label="일정 추가"
+            className="ml-1 grid size-11 place-items-center rounded-lg bg-slot-a text-xl leading-none font-medium text-white"
           >
             ＋
           </Link>
@@ -124,7 +127,7 @@ function Toggle({
     <Link
       href={href}
       aria-current={active ? "true" : undefined}
-      className={`rounded-lg border px-2.5 py-1 ${
+      className={`grid h-11 min-w-11 place-items-center rounded-lg border px-2.5 ${
         active ? "border-slot-a bg-slot-a-bg" : "border-line text-ash"
       }`}
     >

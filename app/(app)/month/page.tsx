@@ -61,9 +61,21 @@ export default async function MonthPage(props: PageProps<"/month">) {
         <h1 className="font-display text-2xl">
           {year}년 {month}월
         </h1>
-        <div className="flex gap-4 text-sm text-ash">
-          <Link href={`/month?y=${prev.y}&m=${prev.m}`}>‹</Link>
-          <Link href={`/month?y=${next.y}&m=${next.m}`}>›</Link>
+        <div className="flex items-center text-ash">
+          <Link
+            href={`/month?y=${prev.y}&m=${prev.m}`}
+            aria-label="지난달"
+            className="grid size-11 place-items-center rounded-lg text-2xl leading-none hover:bg-slot-a-bg"
+          >
+            ‹
+          </Link>
+          <Link
+            href={`/month?y=${next.y}&m=${next.m}`}
+            aria-label="다음 달"
+            className="grid size-11 place-items-center rounded-lg text-2xl leading-none hover:bg-slot-a-bg"
+          >
+            ›
+          </Link>
         </div>
       </div>
 

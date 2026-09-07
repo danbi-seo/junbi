@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getContext } from "@/lib/session";
 import { instantToWall } from "@/lib/time";
 import { EventForm } from "../event-form";
+import { BackButton } from "@/app/back-button";
 import { ProposalActions } from "./proposal-actions";
 import type { VisibleEvent } from "@/lib/events";
 
@@ -31,11 +31,9 @@ export default async function EditEventPage(props: PageProps<"/event/[id]">) {
   if (!editable) {
     return (
       <main className="mx-auto flex w-full max-w-xl flex-1 flex-col px-6 py-8">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex items-center gap-2">
+          <BackButton />
           <h1 className="font-display text-xl">일정</h1>
-          <Link href="/" className="text-sm text-ash underline underline-offset-4">
-            닫기
-          </Link>
         </div>
         <p className="leading-7 text-ash">
           {ctx.label}님의 일정이라 여기서는 볼 수만 있어요.
@@ -60,11 +58,11 @@ export default async function EditEventPage(props: PageProps<"/event/[id]">) {
 
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col px-6 py-8">
-      <div className="mb-8 flex items-center justify-between">
+      {/* 달력에서 눌러 들어왔으면 돌아갈 곳은 홈이 아니라 보고 있던 날짜다.
+          '취소'가 홈으로 보내서 고른 날짜를 잃었다. */}
+      <div className="mb-8 flex items-center gap-2">
+        <BackButton />
         <h1 className="font-display text-xl">일정 고치기</h1>
-        <Link href="/" className="text-sm text-ash underline underline-offset-4">
-          취소
-        </Link>
       </div>
 
       {isProposal && (

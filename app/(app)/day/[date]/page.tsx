@@ -45,9 +45,23 @@ export default async function DayPage(props: PageProps<"/day/[date]">) {
           <div className="font-display text-lg">our Day</div>
           <div className="text-xs text-ash">{formatDay(date)}</div>
         </div>
-        <div className="flex gap-3 text-sm text-ash">
-          <Link href={`/day/${shift(date, -1)}`}>‹</Link>
-          <Link href={`/day/${shift(date, 1)}`}>›</Link>
+        {/* 글자 하나짜리 링크는 누를 자리가 14px밖에 안 된다.
+            보이지도 않고 눌리지도 않아서 44px 상자를 준다. */}
+        <div className="flex items-center text-ash">
+          <Link
+            href={`/day/${shift(date, -1)}`}
+            aria-label="어제"
+            className="grid size-11 place-items-center rounded-lg text-2xl leading-none hover:bg-slot-a-bg"
+          >
+            ‹
+          </Link>
+          <Link
+            href={`/day/${shift(date, 1)}`}
+            aria-label="내일"
+            className="grid size-11 place-items-center rounded-lg text-2xl leading-none hover:bg-slot-a-bg"
+          >
+            ›
+          </Link>
         </div>
       </div>
 
