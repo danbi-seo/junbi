@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Brand } from "./brand";
 import { SignOutButton } from "./sign-out";
+import { ScrollReset } from "./scroll-reset";
 
 /**
  * 반응형 골격 — docs/10-responsive.md
@@ -39,17 +40,30 @@ const ITEMS = [
   { href: "/settings", icon: "⚙", label: "설정" },
 ] satisfies { href: string; icon: string; label: string; short?: string }[];
 
+/**
+ * 하단 탭은 흐름 안에 둔다. position: fixed로 두면 안 된다.
+ *
+ * html에 height: 100dvh가 걸려 있어서 스크롤 상자가 창이 아니라 문서다.
+ * 그 상태의 iOS Safari에서는 fixed가 창이 아니라 문서에 붙어, 설정처럼 긴
+ * 화면을 내리면 탭이 같이 밀려 올라가 사라졌다.
+ *
+ * 골격을 화면 높이에 맞추고 **본문만** 스크롤시키면 탭은 밀릴 수가 없다.
+ * 브라우저마다 다르게 굴지도 않는다.
+ */
+const SCROLLER = "app-scroll";
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const items = ITEMS;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+      <ScrollReset target={SCROLLER} />
       {/* md 이상 — 좌측 레일 · 사이드바 */}
       <nav className="hidden shrink-0 border-r border-line md:flex md:w-[72px] md:flex-col lg:w-[220px]">
         <div className="px-3 py-5 lg:px-5">
           <Brand />
         </div>
-        <ul className="flex flex-1 flex-col gap-1 px-2 lg:px-3">
+        <ul className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-2 lg:px-3">
           {items.map((i) => (
             <li key={i.label}>
               <Link
@@ -67,14 +81,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
-      {/* 본문 */}
-      <div className="flex min-w-0 flex-1 flex-col pb-16 md:pb-0">{children}</div>
-
-      {/* base — 하단 탭. safe-area를 넘어 홈 인디케이터에 가리지 않게 한다. */}
-      <nav
-        className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-card md:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      {/* 본문 — 창이 아니라 여기가 스크롤된다 */}
+      <div
+        id={SCROLLER}
+        className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto"
       >
+        {children}
+      </div>
+
+      {/* base — 하단 탭.
+          홈 인디케이터를 피하는 여백은 body의 safe-area padding이 맡는다.
+          흐름 안으로 들어왔으므로 여기서 또 주면 두 번 들어간다. */}
+      <nav className="shrink-0 border-t border-line bg-card md:hidden">
         <ul className="flex">
           {items.map((i) => (
             <li key={i.label} className="flex-1">
