@@ -87,12 +87,25 @@ function allDay(dayOffset, days = 1) {
 const a = await login(process.env.DEV_EMAIL_A);
 const b = await login(process.env.DEV_EMAIL_B);
 
+// 개발 계정 둘만 집는다.
+// 예전엔 프로필이 두 개뿐이라 prof[0]으로 충분했는데, 다른 커플이 가입한
+// 뒤로는 남의 couple_id를 집어 모든 insert가 RLS에 막혔다.
 const prof = await (
-  await fetch(`${URL_}/rest/v1/profiles?select=id,couple_id,member_slot`, {
-    headers: { apikey: SRV, Authorization: `Bearer ${SRV}` },
-  })
+  await fetch(
+    `${URL_}/rest/v1/profiles?select=id,couple_id,member_slot&id=in.(${a.id},${b.id})`,
+    { headers: { apikey: SRV, Authorization: `Bearer ${SRV}` } },
+  )
 ).json();
-const couple_id = prof[0].couple_id;
+
+const couple_id = prof.find((p) => p.id === a.id)?.couple_id;
+if (!couple_id) {
+  console.error('개발 계정 프로필을 찾지 못했습니다. scripts/dev-pair.sql로 먼저 연결하세요.');
+  process.exit(1);
+}
+if (prof.some((p) => p.couple_id !== couple_id)) {
+  console.error('개발 계정 둘이 같은 커플이 아닙니다.');
+  process.exit(1);
+}
 const slotOf = (id) => prof.find((p) => p.id === id)?.member_slot;
 
 console.log(`\n검증용 데이터 세트`);

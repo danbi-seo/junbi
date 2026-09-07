@@ -38,11 +38,11 @@ export async function setUpcomingMinutes(
 
   // ETag를 밀어 캘린더 앱이 새 알림을 받아가게 한다.
   // 내가 만든 일정 하나만 건드려도 최대 updated_at이 올라간다.
-  await supabase
-    .from("events")
-    .update({ updated_at: new Date().toISOString() })
-    .eq("owner_id", user.id)
-    .is("deleted_at", null);
+  //
+  // 테이블을 직접 치면 안 된다. where 절이 owner_id를 읽는데 events에는
+  // select 권한이 없어서 42501로 죽는다. 오류를 안 보는 코드라 화면에는
+  // '저장됨'이 뜨고 캘린더 앱은 304만 받아 새 알림을 영영 못 받았다.
+  await supabase.rpc("touch_my_events");
 
   revalidatePath("/settings");
   return { ok: true };

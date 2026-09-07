@@ -824,3 +824,16 @@
     아니면 사용자가 직접 끄게 둘지. 안 정하면 같은 알림이 두 번 온다 → 13-notifications
 [ ] 코드 레포를 공개할지            1단계 후 재검토. 백업 레포는 영구 Private
 ```
+
+## 일정 수정·삭제는 테이블이 아니라 RPC로
+
+`revoke select on events from authenticated`는 유지한다. 대신 수정·삭제를
+`update_event` · `delete_event` security definer 함수로 옮겼다.
+
+`update ... where id = $1`은 where 절이 컬럼을 읽으므로 그 컬럼에 select
+권한을 요구한다. update 권한만으로는 42501이 난다. 그래서 일정 수정·삭제와
+`.ics` ETag 밀기가 처음부터 전부 죽어 있었다.
+
+`grant select (id) on events`로 한 컬럼만 여는 길도 있었지만 고르지 않았다.
+검증 스크립트가 `select=id,title`을 보므로 여전히 통과해서, 규칙이 무너진 것을
+아무도 모르게 된다. 함수 안의 where 조건은 "일정 수정" RLS 정책과 똑같이 맞춘다.

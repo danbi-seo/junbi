@@ -55,10 +55,19 @@ console.log('\n접근 권한 검증 — 로그인한 두 계정')
 const one = await login(EMAIL_A)
 const two = await login(EMAIL_B)
 
-// 테스트 일정의 주인이 누구인지 찾아 역할을 정한다.
-const probe = await q(one, 'events_visible?select=owner_id,title&title=like.%5B테스트%5D*')
-const ownerId = probe.body?.find((e) => e.title)?.owner_id
-const owner = ownerId === one.id ? one : two
+// '시간만' 일정을 가진 쪽을 소유자로 잡는다.
+//
+// 아무 일정이나 집으면 안 된다. 검증 데이터는 양쪽에 다 깔리는데 순서가
+// 정해져 있지 않아서, 가릴 게 없는 계정이 소유자로 뽑히면 마스킹 항목이
+// 통째로 헛돈다. 실제로 그렇게 두 항목이 계속 실패하고 있었다.
+//
+// 자기 'busy' 일정은 자기에게 제목이 보인다. 상대 것은 제목이 null이다.
+// 그래서 "제목이 보이는 busy 일정"이 있으면 그쪽이 소유자다.
+const probe = await q(
+  one,
+  'events_visible?select=owner_id,title&title=like.%5B검증%5D*&visibility=eq.busy&title=not.is.null',
+)
+const owner = probe.body?.[0]?.owner_id === one.id ? one : two
 const partner = owner === one ? two : one
 
 console.log(`소유자: ${owner.email}`)
@@ -114,16 +123,37 @@ check(
   `status=${raw.status} ${JSON.stringify(raw.body)?.slice(0, 120)}`,
 )
 
-// ── 시나리오 5·6·7c·7d·13 — 짝 조회 정책이 없어야 하는 것 ──────
+// ── 시나리오 5 — 주기 원본 ────────────────────────────────────
+//
+// '0건'으로 검사하면 안 된다. 본인은 자기 주기를 읽을 수 있으므로,
+// 검사하는 쪽이 주기를 쓰는 사람이면 자기 것 때문에 실패한다.
+// 실제로 그렇게 유출이 아닌데 실패가 났다.
+//
+// 지켜야 하는 건 "남의 행이 한 건도 안 나온다"는 쪽이다.
+for (const w of [owner, partner]) {
+  const r = await q(w, 'cycles?select=id,user_id')
+  const rows = Array.isArray(r.body) ? r.body : []
+  const others = rows.filter((x) => x.user_id !== w.id)
+  check(
+    `${w === owner ? '소유자' : '상대'}에게 남의 주기가 안 보인다 (시나리오 5)`,
+    '주기 원본은 짝에게도 안 나간다. 파생값만 partner_health()로 나간다',
+    !r.denied ? others.length === 0 : true,
+    `status=${r.status} 전체 ${rows.length}건 중 남의 것 ${others.length}건`,
+  )
+}
+
+// ── 시나리오 6·13 — 정책이 0개여야 하는 것 ────────────────────
+// 이쪽은 service_role 전용이라 본인 것도 안 나오는 게 맞다.
 const cases = [
-  ['cycles', '주기 원본은 짝에게도 안 나간다 (시나리오 5)', 'cycles?select=id'],
   ['calendar_accounts', '외부 캘린더 토큰 (시나리오 6)', 'calendar_accounts?select=id'],
   ['ics_tokens', '.ics 비밀 URL (시나리오 13)', 'ics_tokens?select=token'],
   ['notification_queue', '알림 본문', 'notification_queue?select=id'],
 ]
 for (const [name, why, p] of cases) {
-  const r = await q(partner, p)
-  check(`상대가 ${name}를 읽을 수 없다`, why, r.denied || (Array.isArray(r.body) && r.body.length === 0), `status=${r.status} ${JSON.stringify(r.body)?.slice(0, 120)}`)
+  for (const w of [owner, partner]) {
+    const r = await q(w, p)
+    check(`${name}는 본인에게도 안 보인다`, why, r.denied || (Array.isArray(r.body) && r.body.length === 0), `status=${r.status} ${JSON.stringify(r.body)?.slice(0, 120)}`)
+  }
 }
 
 // 본인 것만 보여야 하는 것 — 0건이 아니라 '내 것 1건'이 정답이다.

@@ -18,6 +18,12 @@ import type { EventScope, EventVisibility } from "@/lib/events";
  * ⚠ insert/update 뒤에 .select()를 붙이지 말 것.
  *   events는 select 권한이 없어서 "만든 행을 돌려달라"는 요청이 403이 된다.
  *   돌려받아야 하면 events_visible에서 다시 읽는다.
+ *
+ * ⚠ 수정·삭제는 테이블을 직접 건드리지 않고 RPC로 간다.
+ *   `update ... where id = $1`은 where 절이 id를 읽으므로 그 컬럼에 select
+ *   권한을 요구한다. events에는 그게 없어서 42501로 죽는다. update 권한만
+ *   있어도 안 된다 → supabase/migrations/20260907090038_event_write_rpc.sql
+ *   insert는 컬럼을 읽지 않으므로 지금처럼 직접 넣어도 된다.
  */
 
 export type ActionResult = { ok: true } | { ok: false; message: string };
@@ -26,11 +32,21 @@ const MESSAGES: Record<string, string> = {
   NOT_PAIRED: "먼저 상대와 연결해 주세요",
   NO_TITLE: "제목을 입력해 주세요",
   BAD_RANGE: "끝나는 시각이 시작보다 빨라요",
+  NOT_ALLOWED: "이 일정은 고칠 수 없어요",
 };
 
 function fail(code: string): ActionResult {
   // DB 오류 원문을 화면에 띄우지 않는다. 스키마 구조가 노출된다 → docs/07-api.md
   return { ok: false, message: MESSAGES[code] ?? "저장하지 못했어요. 다시 시도해 주세요" };
+}
+
+/**
+ * RPC는 오류를 code가 아니라 message에 담아 온다.
+ * raise exception의 문구('NOT_ALLOWED')가 그대로 들어 있다.
+ */
+function fromRpc(message: string): ActionResult {
+  if (message.includes("NOT_SIGNED_IN")) redirect("/login");
+  return fail(Object.keys(MESSAGES).find((k) => message.includes(k)) ?? "");
 }
 
 type Input = {
@@ -146,21 +162,20 @@ export async function updateEvent(id: string, form: FormData): Promise<ActionRes
   const range = toRange(i, ctx.timeZone);
   if (new Date(range.ends_at) < new Date(range.starts_at)) return fail("BAD_RANGE");
 
-  const { error } = await ctx.supabase
-    .from("events")
-    .update({
-      scope: i.scope,
-      visibility: i.visibility,
-      title: i.title,
-      emoji: i.emoji,
-      memo: i.memo,
-      all_day: i.allDay,
-      silent: i.silent,
-      ...range,
-    })
-    .eq("id", id);
+  const { error } = await ctx.supabase.rpc("update_event", {
+    p_id: id,
+    p_scope: i.scope,
+    p_visibility: i.visibility,
+    p_title: i.title,
+    p_emoji: i.emoji,
+    p_memo: i.memo,
+    p_all_day: i.allDay,
+    p_silent: i.silent,
+    p_starts_at: range.starts_at,
+    p_ends_at: range.ends_at,
+  });
 
-  if (error) return fail(error.code ?? "");
+  if (error) return fromRpc(error.message);
 
   revalidatePath("/", "layout");
   return { ok: true };
@@ -175,12 +190,9 @@ export async function deleteEvent(id: string): Promise<ActionResult> {
   const ctx = await context();
   if (!ctx) return fail("NOT_PAIRED");
 
-  const { error } = await ctx.supabase
-    .from("events")
-    .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+  const { error } = await ctx.supabase.rpc("delete_event", { p_id: id });
 
-  if (error) return fail(error.code ?? "");
+  if (error) return fromRpc(error.message);
 
   revalidatePath("/", "layout");
   return { ok: true };
