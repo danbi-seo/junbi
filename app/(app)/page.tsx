@@ -39,7 +39,9 @@ export default async function HomePage(props: PageProps<"/">) {
   const sp = await props.searchParams;
   const today = todayIn(ctx.timeZone);
   const selected = typeof sp.d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.d) ? sp.d : today;
-  const view = sp.v === "month" ? "month" : "week";
+  // 한 달이 기본이다. 처음 여는 사람은 '이번 주에 뭐 있지'보다
+  // '언제 시간 되지'를 먼저 보고, 그건 한 달이 있어야 보인다.
+  const view = sp.v === "week" ? "week" : "month";
 
   // 달력 점 표기에는 6주치가 필요하고, 목록에는 하루치면 된다.
   // 한 번에 6주치를 읽고 목록은 걸러 쓴다. 왕복을 줄인다.
