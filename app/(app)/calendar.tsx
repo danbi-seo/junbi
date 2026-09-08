@@ -56,7 +56,7 @@ export function Calendar({
             dir="prev"
             label={view === "month" ? "지난달" : "지난주"}
           />
-          <h2 className="font-display px-1 text-xl">{month}월</h2>
+          <h2 className="font-display px-3 text-xl">{month}월</h2>
           <ArrowLink
             href={`/?d=${next}&v=${view}`}
             dir="next"
