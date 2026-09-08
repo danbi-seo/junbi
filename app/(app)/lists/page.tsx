@@ -41,7 +41,7 @@ export default async function ListsPage() {
 
       <div className="flex items-center justify-between">
         <span className="md:hidden">
-          <Brand />
+          <Brand back />
         </span>
         <h1 className="font-display text-lg">our List</h1>
       </div>

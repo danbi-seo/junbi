@@ -47,7 +47,7 @@ export default async function DayPage(props: PageProps<"/day/[date]">) {
             거꾸로 두면 정작 필요한 글자가 12px 회색으로 깔린다. */}
         <div className="min-w-0 text-center">
           <div className="text-xs text-ash">our Day</div>
-          <div className="font-display text-2xl leading-tight">
+          <div className="font-display text-lg leading-tight">
             {formatDay(date)}
           </div>
           {isToday && <div className="text-xs text-slot-a">오늘</div>}

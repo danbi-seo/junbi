@@ -44,7 +44,7 @@ export default async function ExpensesPage() {
 
       <div className="flex items-center justify-between">
         <span className="md:hidden">
-          <Brand />
+          <Brand back />
         </span>
         <h1 className="font-display text-lg">our Pay</h1>
       </div>

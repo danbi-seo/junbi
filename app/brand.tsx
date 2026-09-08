@@ -53,9 +53,48 @@ function Pair({
   );
 }
 
-export function Brand({ href = "/" }: { href?: string }) {
+/**
+ * 상단 로고. back을 켜면 왼쪽에 작은 ‹ 가 붙는다.
+ *
+ * 실제로는 로고를 눌러 달력으로 가는 것과 같은 링크다. 다만 탭으로 들어온
+ * 화면에서는 "어떻게 나가지"가 먼저 떠오르는데, 로고가 그 출구라는 걸
+ * 알아채기 어렵다. 화살표 하나가 그걸 알려준다.
+ *
+ * 상자를 두르지 않는다. 테두리를 주면 로고와 나란히 놓인 두 번째 버튼처럼
+ * 보여서, 로고 전체가 하나의 링크라는 사실이 오히려 흐려진다.
+ *
+ * 왼쪽 음수 여백으로 화살표가 차지한 만큼을 되돌린다. 안 그러면 화면마다
+ * 로고 위치가 달라 보인다.
+ */
+export function Brand({
+  href = "/",
+  back = false,
+}: {
+  href?: string;
+  back?: boolean;
+}) {
   return (
-    <Link href={href} className="flex items-center gap-2.5">
+    <Link
+      href={href}
+      aria-label={back ? "달력으로" : undefined}
+      // gap을 둘 다 쓰면 안 된다. tailwind-merge가 없어서 나중에 쓴 쪽이
+      // 아니라 CSS 순서가 이긴다 — gap-1이 무시된다.
+      className={`flex items-center ${back ? "-ml-2.5 gap-1" : "gap-2.5"}`}
+    >
+      {back && (
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          className="size-4 shrink-0 text-ash"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M15 5 8 12l7 7" />
+        </svg>
+      )}
       {/*
        * 원본 mark.png는 824×824 정사각형인데 캐릭터가 518×374만 차지한다.
        * 나머지는 빈 여백이라 32px 상자에 넣으면 실제로는 20×14px로 그려져

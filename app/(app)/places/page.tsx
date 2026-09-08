@@ -28,7 +28,7 @@ export default async function PlacesPage() {
 
       <div className="flex items-center justify-between">
         <span className="md:hidden">
-          <Brand />
+          <Brand back />
         </span>
         <h1 className="font-display text-lg">our Places</h1>
       </div>
