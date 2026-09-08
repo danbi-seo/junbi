@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLink } from "@/app/arrow-link";
 import { WEEKDAY, monthGridRange } from "@/lib/time";
 import { kindOf, type VisibleEvent } from "@/lib/events";
 
@@ -38,11 +39,31 @@ export function Calendar({
 
   const marks = markersByDay(events, me, timeZone);
 
+  // 앞뒤로 넘기기. 월 뷰는 한 달, 주 뷰는 한 주씩 움직인다.
+  // 보고 있는 단위만큼 움직여야 예상대로 굴러간다.
+  const step = view === "month" ? { months: 1 } : { days: 7 };
+  const prev = stepDate(selected, -1, step);
+  const next = stepDate(selected, 1, step);
+
   return (
     <section className="mb-6">
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="font-display text-xl">{month}월</h2>
-        <div className="flex items-center gap-2 text-sm">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        {/* 달 넘기기는 달 이름 옆에 붙인다. 월이 기본 화면이 되면서
+            앞뒤 달로 갈 방법이 아예 없었다. */}
+        <div className="flex items-center gap-1">
+          <ArrowLink
+            href={`/?d=${prev}&v=${view}`}
+            dir="prev"
+            label={view === "month" ? "지난달" : "지난주"}
+          />
+          <h2 className="font-display px-1 text-xl">{month}월</h2>
+          <ArrowLink
+            href={`/?d=${next}&v=${view}`}
+            dir="next"
+            label={view === "month" ? "다음 달" : "다음 주"}
+          />
+        </div>
+        <div className="flex items-center gap-1 text-sm">
           <Toggle active={view === "week"} href={`/?d=${selected}&v=week`}>
             주
           </Toggle>
@@ -55,7 +76,7 @@ export function Calendar({
           <Link
             href={`/new?date=${selected}`}
             aria-label="일정 추가"
-            className="ml-1 grid size-11 place-items-center rounded-lg bg-slot-a text-xl leading-none font-medium text-white"
+            className="grid size-11 place-items-center rounded-lg bg-slot-a text-xl leading-none font-medium text-white"
           >
             ＋
           </Link>
@@ -112,6 +133,30 @@ export function Calendar({
       </div>
     </section>
   );
+}
+
+/**
+ * 날짜를 달·주 단위로 움직인다.
+ *
+ * 달을 더할 때 31일에서 2월로 가면 3월 3일이 되어 버린다. 그러면 화살표를
+ * 눌렀는데 두 달이 넘어간다. 넘치면 그 달의 마지막 날로 붙인다.
+ */
+function stepDate(
+  date: string,
+  dir: 1 | -1,
+  step: { months?: number; days?: number },
+): string {
+  const [y, m, d] = date.split("-").map(Number);
+
+  if (step.days) {
+    const at = new Date(Date.UTC(y, m - 1, d + dir * step.days));
+    return at.toISOString().slice(0, 10);
+  }
+
+  const target = m - 1 + dir * (step.months ?? 1);
+  const last = new Date(Date.UTC(y, target + 1, 0)).getUTCDate();
+  const at = new Date(Date.UTC(y, target, Math.min(d, last)));
+  return at.toISOString().slice(0, 10);
 }
 
 function Toggle({

@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getContext } from "@/lib/session";
 import { dayRange, formatDay } from "@/lib/time";
 import type { VisibleEvent } from "@/lib/events";
+import { ArrowLink } from "@/app/arrow-link";
 import { Brand } from "@/app/brand";
 import { SeamView } from "./seam-view";
 import { Live } from "@/app/(app)/live";
@@ -45,23 +45,9 @@ export default async function DayPage(props: PageProps<"/day/[date]">) {
           <div className="font-display text-lg">our Day</div>
           <div className="text-xs text-ash">{formatDay(date)}</div>
         </div>
-        {/* 글자 하나짜리 링크는 누를 자리가 14px밖에 안 된다.
-            보이지도 않고 눌리지도 않아서 44px 상자를 준다. */}
-        <div className="flex items-center text-ash">
-          <Link
-            href={`/day/${shift(date, -1)}`}
-            aria-label="어제"
-            className="grid size-11 place-items-center rounded-lg text-2xl leading-none hover:bg-slot-a-bg"
-          >
-            ‹
-          </Link>
-          <Link
-            href={`/day/${shift(date, 1)}`}
-            aria-label="내일"
-            className="grid size-11 place-items-center rounded-lg text-2xl leading-none hover:bg-slot-a-bg"
-          >
-            ›
-          </Link>
+        <div className="flex items-center gap-1">
+          <ArrowLink href={`/day/${shift(date, -1)}`} dir="prev" label="어제" />
+          <ArrowLink href={`/day/${shift(date, 1)}`} dir="next" label="내일" />
         </div>
       </div>
 

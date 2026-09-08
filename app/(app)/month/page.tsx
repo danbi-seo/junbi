@@ -6,6 +6,7 @@ import { getContext } from "@/lib/session";
 import { monthGridRange, todayIn, WEEKDAY } from "@/lib/time";
 import { kindOf, titleOf, emojiOf, type VisibleEvent } from "@/lib/events";
 import { Live } from "@/app/(app)/live";
+import { ArrowLink } from "@/app/arrow-link";
 import { Brand } from "@/app/brand";
 
 export const metadata: Metadata = { title: "월 · JUNBI" };
@@ -61,21 +62,9 @@ export default async function MonthPage(props: PageProps<"/month">) {
         <h1 className="font-display text-2xl">
           {year}년 {month}월
         </h1>
-        <div className="flex items-center text-ash">
-          <Link
-            href={`/month?y=${prev.y}&m=${prev.m}`}
-            aria-label="지난달"
-            className="grid size-11 place-items-center rounded-lg text-2xl leading-none hover:bg-slot-a-bg"
-          >
-            ‹
-          </Link>
-          <Link
-            href={`/month?y=${next.y}&m=${next.m}`}
-            aria-label="다음 달"
-            className="grid size-11 place-items-center rounded-lg text-2xl leading-none hover:bg-slot-a-bg"
-          >
-            ›
-          </Link>
+        <div className="flex items-center gap-1">
+          <ArrowLink href={`/month?y=${prev.y}&m=${prev.m}`} dir="prev" label="지난달" />
+          <ArrowLink href={`/month?y=${next.y}&m=${next.m}`} dir="next" label="다음 달" />
         </div>
       </div>
 
