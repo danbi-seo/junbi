@@ -40,7 +40,7 @@ export default async function DayPage(props: PageProps<"/day/[date]">) {
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 py-8 sm:px-6">
       <div className="mb-6 flex items-center justify-between">
         <span className="md:hidden">
-          <Brand />
+          <Brand back />
         </span>
         {/* 큰 쪽이 날짜여야 한다.
             'our Day'는 화면 이름일 뿐이고, 여기서 확인할 것은 며칠인지다.
