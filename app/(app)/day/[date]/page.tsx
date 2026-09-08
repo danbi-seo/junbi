@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getContext } from "@/lib/session";
-import { dayRange, formatDay } from "@/lib/time";
+import { dayRange, formatDay, todayIn } from "@/lib/time";
 import type { VisibleEvent } from "@/lib/events";
 import { ArrowLink } from "@/app/arrow-link";
 import { Brand } from "@/app/brand";
@@ -23,6 +23,7 @@ export default async function DayPage(props: PageProps<"/day/[date]">) {
   if (!ctx) redirect("/");
 
   const { from, to } = dayRange(date, ctx.timeZone);
+  const isToday = date === todayIn(ctx.timeZone);
 
   const supabase = await createClient();
   const { data: events } = await supabase
@@ -41,9 +42,15 @@ export default async function DayPage(props: PageProps<"/day/[date]">) {
         <span className="md:hidden">
           <Brand />
         </span>
-        <div className="text-center">
-          <div className="font-display text-lg">our Day</div>
-          <div className="text-xs text-ash">{formatDay(date)}</div>
+        {/* 큰 쪽이 날짜여야 한다.
+            'our Day'는 화면 이름일 뿐이고, 여기서 확인할 것은 며칠인지다.
+            거꾸로 두면 정작 필요한 글자가 12px 회색으로 깔린다. */}
+        <div className="min-w-0 text-center">
+          <div className="text-xs text-ash">our Day</div>
+          <div className="font-display text-2xl leading-tight">
+            {formatDay(date)}
+          </div>
+          {isToday && <div className="text-xs text-slot-a">오늘</div>}
         </div>
         <div className="flex items-center gap-1">
           <ArrowLink href={`/day/${shift(date, -1)}`} dir="prev" label="어제" />
