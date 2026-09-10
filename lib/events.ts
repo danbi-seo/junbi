@@ -102,3 +102,38 @@ export function timeLabel(e: VisibleEvent, timeZone = "Asia/Seoul"): string {
     timeZone,
   }).format(new Date(e.starts_at));
 }
+
+/**
+ * 일정 폼의 날짜·시각이 온전한지 본다.
+ *
+ * 서버 액션이 아니라 여기에 두는 이유: 이 검사가 틀리면 저장이 통째로
+ * 막히는데, 그런 실수를 잡아 줄 곳이 없었다. 실제로 정규식에서 역슬래시가
+ * 빠져 `\d`가 `d`가 된 적이 있다 — 문법은 멀쩡해서 빌드도 lint도 안 잡았고,
+ * 모든 날짜가 형식 오류로 걸렸다.
+ *
+ * 프레임워크에 기대지 않는 순수 함수라 검증 스크립트가 그대로 부를 수 있다.
+ * → scripts/verify-inputs.mts
+ */
+export const DATE_FORMAT = /^\d{4}-\d{2}-\d{2}$/;
+export const TIME_FORMAT = /^\d{2}:\d{2}/;
+
+export type WhenInput = {
+  date: string;
+  endDate: string;
+  startTime: string;
+  endTime: string;
+  allDay: boolean;
+};
+
+/**
+ * 비었거나 형식이 어긋나면 까닭을 돌려준다. 온전하면 null.
+ *
+ * 빈 시각을 09:00 같은 값으로 몰래 채우지 않는다. 엉뚱한 시간이 저장되는 건
+ * 저장이 안 되는 것보다 나쁘다. 물어본다.
+ */
+export function badWhen(i: WhenInput): "NO_DATE" | "NO_TIME" | null {
+  if (!DATE_FORMAT.test(i.date) || !DATE_FORMAT.test(i.endDate)) return "NO_DATE";
+  if (!i.allDay && (!TIME_FORMAT.test(i.startTime) || !TIME_FORMAT.test(i.endTime)))
+    return "NO_TIME";
+  return null;
+}

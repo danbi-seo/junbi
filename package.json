@@ -11,7 +11,7 @@
     "db:push": "supabase db push --linked",
     "verify:bundle": "node --env-file=.env.local scripts/verify-bundle.mjs",
     "verify:masking": "node --env-file=.env.local scripts/verify-masking.mjs",
-    "verify": "npm run verify:rls && npm run verify:events && npm run verify:writes && npm run verify:masking && npm run verify:push && npm run verify:expenses && npm run verify:health && npm run verify:dissolve && npm run verify:pairing",
+    "verify": "npm run verify:inputs && npm run verify:rls && npm run verify:events && npm run verify:writes && npm run verify:masking && npm run verify:push && npm run verify:expenses && npm run verify:health && npm run verify:dissolve && npm run verify:pairing",
     "verify:ics": "node --env-file=.env.local scripts/verify-ics.mjs",
     "verify:push": "node --env-file=.env.local scripts/verify-push.mjs",
     "fixtures": "node --env-file=.env.local scripts/dev-fixtures.mjs",
@@ -20,7 +20,8 @@
     "verify:dissolve": "node --env-file=.env.local scripts/verify-dissolve.mjs",
     "verify:pairing": "node --env-file=.env.local scripts/verify-pairing.mjs",
     "verify:events": "node --env-file=.env.local scripts/verify-events.mjs",
-    "verify:writes": "node --env-file=.env.local scripts/verify-writes.mjs"
+    "verify:writes": "node --env-file=.env.local scripts/verify-writes.mjs",
+    "verify:inputs": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-inputs.mts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { wallToInstant } from "@/lib/time";
-import type { EventScope, EventVisibility } from "@/lib/events";
+import { badWhen, type EventScope, type EventVisibility } from "@/lib/events";
 
 /**
  * 일정 생성 · 수정 · 삭제.
@@ -36,9 +36,6 @@ const MESSAGES: Record<string, string> = {
   NO_DATE: "날짜를 골라 주세요",
   NO_TIME: "시간을 입력해 주세요",
 };
-
-const DATE = /^\d{4}-\d{2}-\d{2}$/;
-const TIME = /^\d{2}:\d{2}/;
 
 function fail(code: string): ActionResult {
   // DB 오류 원문을 화면에 띄우지 않는다. 스키마 구조가 노출된다 → docs/07-api.md
@@ -94,22 +91,6 @@ function parse(form: FormData): Input {
   };
 }
 
-/**
- * 날짜·시각이 온전한지 본다.
- *
- * 비어 있으면 wallToInstant가 Invalid Date를 만들고, 그걸 포맷할 때
- * 서버 액션이 예외로 죽는다. 화면에는 아무 말도 안 뜨고 저장만 안 된다 —
- * 무엇을 고쳐야 할지 알 수 없는 실패다.
- *
- * 빈 시각을 09:00 같은 값으로 몰래 채우지 않는다. 엉뚱한 시간이 저장되는 건
- * 저장이 안 되는 것보다 나쁘다. 물어본다.
- */
-function badInput(i: Input): string | null {
-  if (!DATE.test(i.date) || !DATE.test(i.endDate)) return "NO_DATE";
-  if (!i.allDay && (!TIME.test(i.startTime) || !TIME.test(i.endTime))) return "NO_TIME";
-  return null;
-}
-
 function toRange(i: Input, timeZone: string) {
   if (i.allDay) {
     // 종일은 시각이 아니라 날짜의 의미다. 그 시간대의 00:00으로 잡는다.
@@ -151,7 +132,7 @@ export async function createEvent(form: FormData): Promise<ActionResult> {
   const i = parse(form);
   if (!i.title) return fail("NO_TITLE");
 
-  const bad = badInput(i);
+  const bad = badWhen(i);
   if (bad) return fail(bad);
 
   const range = toRange(i, ctx.timeZone);
@@ -183,7 +164,7 @@ export async function updateEvent(id: string, form: FormData): Promise<ActionRes
   const i = parse(form);
   if (!i.title) return fail("NO_TITLE");
 
-  const bad = badInput(i);
+  const bad = badWhen(i);
   if (bad) return fail(bad);
 
   const range = toRange(i, ctx.timeZone);
