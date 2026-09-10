@@ -37,8 +37,8 @@ const MESSAGES: Record<string, string> = {
   NO_TIME: "시간을 입력해 주세요",
 };
 
-const DATE = /^d{4}-d{2}-d{2}$/;
-const TIME = /^d{2}:d{2}/;
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME = /^\d{2}:\d{2}/;
 
 function fail(code: string): ActionResult {
   // DB 오류 원문을 화면에 띄우지 않는다. 스키마 구조가 노출된다 → docs/07-api.md
